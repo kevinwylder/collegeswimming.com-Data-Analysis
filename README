@@ -1,0 +1,85 @@
+TL;DR - 
+
+Project:
+	This script scrapes data off collegeswimming.com and puts it into a database. From
+there I plan to build distributions for events, determine the relative effectiveness of 
+tapers, and see if there is a statistically significant difference in taper quality
+between schools with different speed suits. 
+
+Files:
+database.py
+	a script to create the database of swims. The parameters are as follows
+	databaseFileName: the output file name, in the directory this script is run
+	eventsToPull: an array of events that will be searched for in each swimmer
+	gendersToPull: an array of which genders to search for. any combination of "M" and "F"
+	seasonsToPull: a date range to get team rosters from. Keep this small to prevent 
+	               database errors from swimmers switching teams making duplicate swimmers
+	seasonStartTimestamp: a timestamp used to check each swim if it's a part of our season
+	                      it should match the beginning year of seasonsToPull
+	teamsToPull: an array of teamIds that will be searched for. You can use the range
+	             function, but this will 
+	
+
+Important Structures:
+database structure
+	each event will be in two tables, one for each gender
+	the table name will be a gender char followed by collegeswimming.com's event structure
+	for example: M1100Y - mens 100 yard freestyle; F5200Y - womens 200 yard IM
+	the columns in the database are as follows (in order)
+	-------------------------------------
+	| name | date | time | team | taper |
+	-------------------------------------
+	name: a string of the name of the swimmer
+	date: the day of the swim represented by the number of seconds since unix epoch
+	time: a float representing the number of seconds the swim took
+	team: an int for the team's teamId on collegeswimming.com
+	taper: was this a taper swim? we have to guess. possible values:
+		0 - we haven't determined whether or not this was a taper swim (the initial value)
+		1 - this swim appears to be a taper swim (based off season times)
+		2 - this swim appears to not be a taper swim (based off season times)
+
+collegeswimming.com event structure
+	the definition of events is as follows
+	             ABBBBC
+	with characters representing
+	A: The stroke id number. An integer between 1 and 5
+		1 - Freestyle
+		2 - Backstroke
+		3 - Breaststroke
+		4 - Butterfly
+		5 - Individual Meadly
+	B: The distance of the event. While it shows there being 4 B's above, there is no
+	   specification, it can be from 2 to 4 digits
+	C: The pool type
+		Y - short course yards
+		L - long course meters
+		S - I think short course meters, but I've never seen or tested this
+	examples:
+		150Y - 50 Yard Freestyle
+		4100Y - 100 Yard Butterfly
+		3200L - 200 Meter Breaststroke
+	
+collegeswimming.com url structure
+	There are two urls we'll use from the website. The first is a list of the team roster.
+	    http://www.collegeswimming.com/team/{A}/mod/teamroster?season={B}&gender={C}
+	This url returns an HTML page, which must be scraped for swimmer names and ids.
+	The curly braces "{}" are omitted and replaced with
+	A: The team's id number. This is an index on the website. You can manually look this 
+	   up by searching for a team and looking at the number in the url
+	B: The range of years to get swimmers. In the format
+	                    SSSS-EEEE
+	   SSSS - the starting season year
+	   EEEE - the ending season year
+	   Using the selected dropdown spinner on the website, you're only allowed to do two
+	   consecutive years (ex: 2014-2015), but strings are allowed to have unlimited range
+	C: The gender of the roster. A 1 char representation.
+		M - Men's team roster
+		F - Women's team roster
+	
+	The second url we'll use is for a specific swimmer's event
+	http://www.collegeswimming.com/swimmer/{A}/times/byeventid/{B}
+	This url returns all the swims of the specified event json encoded.
+	The curly braces "{}" are omitted and replaced with
+	A: The swimmer's id number. This should be retreived from the team roster
+	B: the event structure. This is defined above as "collegeswimming.com event structure"
+	
