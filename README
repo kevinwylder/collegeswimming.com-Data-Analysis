@@ -1,119 +1,132 @@
 Written by Kevin Wylder for shits and gigs
 
-TL;DR - lines 34, 40, and 76-88
+TL;DR - run main.py with an internet connection and wait. Then some R scripts to graph
+        whatever you want
 
 Project:
-	This script scrapes data off collegeswimming.com and puts it into a database. From
+    This script scrapes data off collegeswimming.com and puts it into a database. From
 there I plan to build distributions for events, determine the relative effectiveness of 
 tapers, and see if there is a statistically significant difference in taper quality
 between schools with different speed suits. 
 
+Checklist:
+    graph an individual's season                                                            "here's my season... doesn't mean much"
+    get mean and standard deviation times of a group (team + gender event + year)-outliers  "here's our season, compared to other years"
+    tag some swims as taper swims
+    get average z-score improvment for tapers by team                                        "here are our tapers"
+
 Files:
-database.py
-	a script to create the database of swims. The parameters are as follows
-	databaseFileName: the output file name, in the directory this script is run
-	eventsToPull: an array of events that will be searched for in each swimmer
-	gendersToPull: an array of which genders to search for. any combination of "M" and "F"
-	teamsToPull: an array of teamIds that will be searched for. You can use the range
-	             function, but this will 
-	yearStart: the starting year of this search
-	yearEnd: the ending year of this search
-	seasonLineMonth: the first month of the year that starts off the season
-	seasonLineDay: the day of the month that corresponds to "the first day of the season"
+main.py
+    A python script to create the database of swims. This is the main script of the 
+    project so you should definitely start by running this. Make sure to set the 
+    parameters to fit your interest. The parameters (in the script file) are as follows
+    databaseFileName: the output file name, in the directory this script is run
+    eventsToPull: an array of events that will be searched for in each swimmer
+    gendersToPull: an array of which genders to search for. any combination of "M" and "F"
+    teamsToPull: an array of teamIds that will be searched for. You can use the range
+                 function, but this will 
+    yearStart: the starting year of this search
+    yearEnd: the ending year of this search
+    seasonLineMonth: the first month of the year that starts off the season
+    seasonLineDay: the day of the month that corresponds to "the first day of the season"
 
-
-graph.py
-	a script to graph the rank-time distribution of any table in the database created with
-	database.py. This requires ggplot, which has many dependencies. To get ggplot, see
-	https://ggplot.yhathq.com/install.html
-	
+scale.R
+    An R script to assign a z-score to every swim and store it in the scaled column.
+    the parameter(s) of this script is the event to check. Multiple events are allowed as
+    seen at the end of database.py, you can call this script in your terminal like this:
+    "Rscript scale.R M150Y M1100Y M1200Y" to scale the 50, 100, and 200 freestyle tables
+    in the database you've created with database.py
  
-	
+tagTaper.R
+    An R script to determine whether a swim was a taper swim, in season swim, or outlier
+    (ie: shitty) swim. This will be written in the "taper" column of 
+    
 
 Important Structures:
 database structure
-	each event will be in two tables, one for each gender
-	the table name will be a gender char followed by collegeswimming.com's event structure
-	for example: M1100Y - mens 100 yard freestyle; F5200Y - womens 200 yard IM
-	the columns of these tables in the database are as follows (in order)
-	------------------------------------------------
-	| name | team | time | date | taper | snapshot |
-	------------------------------------------------
-	name: an int for the swimmer's teamId on collegeswimming.com
-	team: an int for the team's teamId on collegeswimming.com
-	time: a float representing the number of seconds the swim took
-	date: the day of the swim represented by the number of seconds since unix epoch
-	taper: was this a taper swim? we have to guess. possible values:
-		0 - we haven't determined whether or not this was a taper swim (the initial value)
-		1 - this swim appears to be a taper swim (based off season times)
-		2 - this swim appears to not be a taper swim (based off season times)
-	snapshot: an integer that corresponds to when this row was added to the database. This
-	          is just to help control duplicates and have more info about the farming.
-	
-	"Swimmers" and "Teams" are tables to match Strings to swimmer or team identification 
-	ints from collegeswimming.com. These tables will have the following columns:
-	-------------
-	| name | id |
-	-------------
-	name: A string representation of an entity (ie. "Kevin Wylder" or "UC San Diego")
-	id: the integer that matches this entity (ex. "UC San Diego" has 121 as it's id)
-	
-	"Snapshots" is a table with information about the parameters of the search when this
-	data was extracted. It has the columns:
-	------------------------------------
-	| snapshot | date | teams | events |
-	------------------------------------
-	snapshot: a integer for this pull that will match many rows in the event tables
-	date: a human readable string displaying specified time range for this pull
-	      (ex: "2014.9.15-2015.9.15")
-	teams: a string list of teamIds specified in this pull, separated by "," 
-	      (ex: "121,122,123,125")
-	events: a string list of event table names in this pull, separated by "," 
-	        (ex: "M150Y,F150Y,M4100Y,F4100Y")
-	
+    The table "Swims" will hold all the swims pulled off collegeswimming.com.
+    the columns of these tables in the database are as follows (in order)
+    --------------------------------------------------------------------
+    | swimmer | team | time | scaled | event | date | taper | snapshot | 
+    --------------------------------------------------------------------
+    swimmer: an int for the swimmer's teamId on collegeswimming.com
+    team: an int for the team's teamId on collegeswimming.com
+    time: a float representing the number of seconds the swim took
+    scaled: a float z score according to this swimmer's season
+    event: a gender char followed by collegeswimming.com's event structure (ex: M150Y)
+    date: the day of the swim represented by the number of seconds since unix epoch
+    taper: was this a taper swim? We have to guess b/c it's not online. possible values:
+        0 - we haven't determined whether or not this was a taper swim (the initial value)
+        1 - this swim appears to be a taper swim (based off season times)
+        2 - this swim appears to not be a taper swim (based off season times)
+        3 - this is an outlier swim (more than 3 sd from their mean)
+    snapshot: an integer that corresponds to when this row was added to the database. This
+              is just to help control duplicates and have more info about the farming.
+    
+    "Swimmers" and "Teams" are tables to match Strings to swimmer or team identification 
+    ints from collegeswimming.com. These tables will have the following columns:
+    -------------
+    | name | id |
+    -------------
+    name: A string representation of an entity (ie. "Kevin Wylder" or "UC San Diego")
+    id: the integer that matches this entity (ex. "UC San Diego" has 121 as it's id)
+    
+    "Snapshots" is a table with information about the parameters of the search when this
+    data was extracted. It has the columns:
+    ------------------------------------
+    | snapshot | date | teams | events |
+    ------------------------------------
+    snapshot: a integer for this pull that will match many rows in the event tables
+    date: a human readable string displaying specified time range for this pull
+          (ex: "2014.9.15-2015.9.15")
+    teams: a string list of teamIds specified in this pull, separated by "," 
+          (ex: "121,122,123,125")
+    events: a string list of event table names in this pull, separated by "," 
+            (ex: "M150Y,F150Y,M4100Y,F4100Y")
+        
 
 collegeswimming.com event structure
-	the definition an event is as follows
-	             ABBBBC
-	with characters representing
-	A: The stroke id number. An integer between 1 and 5
-		1 - Freestyle
-		2 - Backstroke
-		3 - Breaststroke
-		4 - Butterfly
-		5 - Individual Meadly
-	B: The distance of the event. While it shows there being 4 B's above, there is no
-	   specification, it can be from 2 to 4 digits
-	C: The pool type
-		Y - short course yards
-		L - long course meters
-		S - I think short course meters, but I've never seen or tested this
-	examples:
-		150Y - 50 Yard Freestyle
-		4100Y - 100 Yard Butterfly
-		3200L - 200 Meter Breaststroke
-	
+    the definition an event is as follows
+                 ABBBBC
+    with characters representing
+    A: The stroke id number. An integer between 1 and 5
+        1 - Freestyle
+        2 - Backstroke
+        3 - Breaststroke
+        4 - Butterfly
+        5 - Individual Meadly
+    B: The distance of the event. While it shows there being 4 B's above, there is no
+       specification, it can be from 2 to 4 digits
+    C: The pool type
+        Y - short course yards
+        L - long course meters
+        S - I think short course meters, but I've never seen or tested this
+    examples:
+        150Y - 50 Yard Freestyle
+        4100Y - 100 Yard Butterfly
+        3200L - 200 Meter Breaststroke
+    
 collegeswimming.com url structure
-	There are two urls we'll use from the website. The first is a list of the team roster.
-	    http://www.collegeswimming.com/team/{A}/mod/teamroster?season={B}&gender={C}
-	This url returns an HTML page, which must be scraped for swimmer names and ids.
-	The curly braces "{}" are omitted and replaced with
-	A: The team's id number. This is an index on the website. You can manually look this 
-	   up by searching for a team and looking at the number in the url
-	B: The range of years to get swimmers. In the format
-	                    SSSS-EEEE
-	   SSSS - the starting season year
-	   EEEE - the ending season year
-	   Using the selected dropdown spinner on the website, you're only allowed to do two
-	   consecutive years (ex: 2014-2015), but strings are allowed to have unlimited range
-	C: The gender of the roster. A 1 char representation.
-		M - Men's team roster
-		F - Women's team roster
-	
-	The second url we'll use is for a specific swimmer's event
-	http://www.collegeswimming.com/swimmer/{A}/times/byeventid/{B}
-	This url returns all the swims of the specified event json encoded.
-	The curly braces "{}" are omitted and replaced with
-	A: The swimmer's id number. This should be retreived from the team roster
-	B: the event structure. This is defined above as "collegeswimming.com event structure"
-	
+    There are two urls we'll use from the website. The first is a list of the team roster.
+        http://www.collegeswimming.com/team/{A}/mod/teamroster?season={B}&gender={C}
+    This url returns an HTML page, which must be scraped for swimmer names and ids.
+    The curly braces "{}" are omitted and replaced with
+    A: The team's id number. This is an index on the website. You can manually look this 
+       up by searching for a team and looking at the number in the url
+    B: The range of years to get swimmers. In the format
+                        SSSS-EEEE
+       SSSS - the starting season year
+       EEEE - the ending season year
+       Using the selected dropdown spinner on the website, you're only allowed to do two
+       consecutive years (ex: 2014-2015), but strings are allowed to have unlimited range
+    C: The gender of the roster. A 1 char representation.
+        M - Men's team roster
+        F - Women's team roster
+    
+    The second url we'll use is for a specific swimmer's event
+    http://www.collegeswimming.com/swimmer/{A}/times/byeventid/{B}
+    This url returns all the swims of the specified event json encoded.
+    The curly braces "{}" are omitted and replaced with
+    A: The swimmer's id number. This should be retreived from the team roster
+    B: the event structure. This is defined above as "collegeswimming.com event structure"
+    
