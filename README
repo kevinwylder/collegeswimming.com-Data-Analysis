@@ -1,46 +1,52 @@
-Written by Kevin Wylder for shits and gigs
+Written by Kevin Wylder
 
-TL;DR - run main.py with an internet connection and wait. Then some R scripts to graph
-        whatever you want
-
-Project:
-    This script scrapes data off collegeswimming.com and puts it into a database. From
-there I plan to build distributions for events, determine the relative effectiveness of 
-tapers, and see if there is a statistically significant difference in taper quality
-between schools with different speed suits. 
-
-Checklist:
-    graph an individual's season                                                            "here's my season... doesn't mean much"
-    get mean and standard deviation times of a group (team + gender event + year)-outliers  "here's our season, compared to other years"
-    tag some swims as taper swims
-    get average z-score improvment for tapers by team                                        "here are our tapers"
+TL;DR - Set the parameters in parameters.py. Then run the following commands
+            python main.py
+            python analysis.py
+        and look in the graphs directory for fun data. 
+        You can check the database for your own analysis, but you'd have to RTFM.
 
 Files:
+parameters.py
+    A python class that controls main.py and analysis.py. This is just a list of editable 
+    parameters. If you change the Global Parameters, delete everything and restart main.py
+    Editing analysis.py params is fine. This also includes some support functions
+    Global parameters -
+        databaseFileName: the output file name, in the directory this script is run
+        seasonLineMonth: the first month of the year that starts off the season
+        seasonLineDay: the day of the month that corresponds to the first day of season
+    main.py parameters -
+        eventsToPull: an array of events that will be searched for in each swimmer
+        gendersToPull: an array of which genders to search for. "M" and/or "F"
+        teamsToPull: an array of teamIds that will be searched for. You can use the range
+                     function, but this will 
+        yearStart: the starting year of this search
+        yearEnd: the ending year of this search
+    analysis.py parameters -
+    	eventHistograms: a list of events to graph with histogram_event.R
+        teamsToReview: a list of teams to graph with team_history.R and team_season.R
+        swimmersToReview: a list of swimmers to graph with individual_season.R
+        reviewYearStart and reviewYearEnd: the starting analysis year. this is used in 
+                                           conjunction with the gobal parameters
+        
 main.py
     A python script to create the database of swims. This is the main script of the 
-    project so you should definitely start by running this. Make sure to set the 
-    parameters to fit your interest. The parameters (in the script file) are as follows
-    databaseFileName: the output file name, in the directory this script is run
-    eventsToPull: an array of events that will be searched for in each swimmer
-    gendersToPull: an array of which genders to search for. any combination of "M" and "F"
-    teamsToPull: an array of teamIds that will be searched for. You can use the range
-                 function, but this will 
-    yearStart: the starting year of this search
-    yearEnd: the ending year of this search
-    seasonLineMonth: the first month of the year that starts off the season
-    seasonLineDay: the day of the month that corresponds to "the first day of the season"
+    project so you should definitely start by running this. It may take a while, and
+    obviously requires an internet connection. The result of running this is a sqlite3 
+    database in the working directory with the name set in parameters.py
 
-scale.R
-    An R script to assign a z-score to every swim and store it in the scaled column.
-    the parameter(s) of this script is the event to check. Multiple events are allowed as
-    seen at the end of database.py, you can call this script in your terminal like this:
-    "Rscript scale.R M150Y M1100Y M1200Y" to scale the 50, 100, and 200 freestyle tables
-    in the database you've created with database.py
- 
-tagTaper.R
-    An R script to determine whether a swim was a taper swim, in season swim, or outlier
-    (ie: shitty) swim. This will be written in the "taper" column of 
-    
+analysis.py
+    A python script to graph whatever is specified in parameters.py. This script is really
+    just a wrapper for the R scripts, which do all the real work. 
+
+histogram_event.R
+    creates a graph of an event over the specified time period
+
+team_history.R
+
+team_season.R
+
+individual_season.R
 
 Important Structures:
 database structure
@@ -52,7 +58,7 @@ database structure
     swimmer: an int for the swimmer's teamId on collegeswimming.com
     team: an int for the team's teamId on collegeswimming.com
     time: a float representing the number of seconds the swim took
-    scaled: a float z score according to this swimmer's season
+    scaled: a float z score according to this event's season
     event: a gender char followed by collegeswimming.com's event structure (ex: M150Y)
     date: the day of the swim represented by the number of seconds since unix epoch
     taper: was this a taper swim? We have to guess b/c it's not online. possible values:

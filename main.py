@@ -1,10 +1,9 @@
 import urllib2
 import json
 import sqlite3
-import datetime
 import random
-import subprocess
 import sys
+import parameters
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # College Swimming Spring Break Project 2015                                Kevin Wylder #
@@ -16,15 +15,16 @@ import sys
 # From here on out, 90 character width isn't guarenteed                                   #
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-# search and output parameters
-databaseFileName = "collegeswimming.db"
-eventsToPull = ["150Y", "4100Y", "1100Y", "2100Y", "3100Y", "11000Y", "1500Y", "1200Y"]
-gendersToPull = ["M", "F"]
-teamsToPull = [51, 107, 116, 121, 131, 154, 155, 188, 194, 261, 362, 337, 384, 385, 390, 417, 447, 496, 497, 499, 517, 528, 542, 639]
-yearStart = 2010
-yearEnd = 2015
-seasonLineMonth = 9
-seasonLineDay = 15
+# setup search and output parameters
+parameters = parameters.Parameters()
+databaseFileName = parameters.databaseFileName 
+eventsToPull = parameters.eventsToPull
+gendersToPull = parameters.gendersToPull
+teamsToPull = parameters.teamsToPull
+yearStart = parameters.yearStart
+yearEnd = parameters.yearEnd
+seasonLineMonth = parameters.seasonLineMonth
+seasonLineDay = parameters.seasonLineDay
 
 swimmerEventUrl = "http://www.collegeswimming.com/swimmer/{}/times/byeventid/{}"
 teamRosterUrl = "http://www.collegeswimming.com/team/{}/mod/teamroster?season={}&gender={}"
@@ -37,15 +37,8 @@ createNameTable = "create table if not exists {} (name TEXT, id INTEGER);"
 checkNameTable = "select id from {} where id={} limit 1;"
 addToNameTable = "insert into {} values('{}', {});"
 
-def convertToTimestamp(year, month, day):
-	'converts a given month day and year into a timestamp. Why is this so hard?'
-	return (datetime.datetime(int(year), int(month), int(day)) - datetime.datetime(1970,1,1)).total_seconds()
-
 searchStartTimestamp = 0
 searchEndTimestamp = 0
-
-def scaleList(list):
-	"return a list of z-scores of the input"
 
 def showLoadingBar(percent):
 	chars = int(percent * 50)
@@ -62,7 +55,7 @@ def requestSwimmer(swimmerId, event):
 	for swim in eventHistory:
 		# convert the date string to epoch
 		splitDate = swim["dateofswim"].split("-")		
-		date = convertToTimestamp(splitDate[0], splitDate[1], splitDate[2])
+		date = parameters.convertToTimestamp(splitDate[0], splitDate[1], splitDate[2])
 		if date > searchStartTimestamp and date < searchEndTimestamp:  # defined below the timestamp function and updated every year loop
 			swimTuple = (date, swim["time"])
 			swimmerData.append(swimTuple)
@@ -105,115 +98,120 @@ connection = sqlite3.connect(databaseFileName)
 cursor = connection.cursor()
 
 # add information about this snapshot to the Snapshots table (and create it if it doesn't exist)
-# cursor.execute(createSnapshotTableCommand);
-# snapshotId = random.randint(0, 4294967295) # what are the odds? 100% I'm a lazy programmer
-# dateRangeString = "{0}.{1}.{2}-{3}.{1}.{2}".format(yearStart, seasonLineMonth, seasonLineDay, yearEnd)
-# teamsString = ",".join(str(team) for team in teamsToPull)
-# eventsString = ",".join(eventsToPull)
-# cursor.execute(insertSnapshotCommand.format(snapshotId, dateRangeString, teamsString, eventsString))
-# 
-# # ensure the existence of each event table and the Teams/Swimmers tables
-# cursor.execute(createSwimsTable)
-# cursor.execute(createNameTable.format("Swimmers"))
-# cursor.execute(createNameTable.format("Teams"))
-# 
-# # retrieve and add the times to the database
-# for simpleYear in range(yearStart, yearEnd):   # for each competition year
-# 	seasonString = str(simpleYear) + "-" + str(simpleYear + 1)
-# 	print "Collecting Season {}".format(seasonString)
-# 	searchStartTimestamp = convertToTimestamp(simpleYear, seasonLineMonth, seasonLineDay)
-# 	searchEndTimestamp = convertToTimestamp(simpleYear + 1, seasonLineMonth, seasonLineDay)
-# 	teamCounter = 0
-# 	percent = 0
-# 	for teamId in teamsToPull:   # for each team
-# 		for gender in gendersToPull:  # for each gender
-# 			# pull the roster for this season and gender
-# 			teamInfo = requestTeamRoster(teamId, seasonString, gender)
-# 			# add team to the Teams table
-# 			if not teamInfo[1] is "":  # if there wasn't a 404 error
-# 				matches = cursor.execute(checkNameTable.format("Teams", teamId))
-# 				if matches.fetchone() is None:  # if there are no duplicates
-# 					cursor.execute(addToNameTable.format("Teams", teamInfo[1], teamId))
-# 			for index, swimmer in enumerate(teamInfo[0]):   # for each swimmer on the team
-# 				# enumerate this loop to have an index for the loading bar
-# 				percentOfTeam = float(index) / float(len(teamInfo[0]))
-# 				showLoadingBar(percent + (percentOfTeam / float(len(teamsToPull) * 2)))
-# 				# add the swimmer to the Names table
-# 				matches = cursor.execute(checkNameTable.format("Swimmers", swimmer[1]))
-# 				if matches.fetchone() is None:
-# 					cursor.execute(addToNameTable.format("Swimmers", swimmer[0], swimmer[1]))
-# 				for event in eventsToPull:   # for each of this swimmer's event we're searching
-# 					swims = requestSwimmer(swimmer[1], event)
-# 					for swim in swims:   # for each qualified race
-# 						# add this race to the database
-# 						command = insertSwimCommand.format(swimmer[1], teamId, swim[1], 0, gender, event, swim[0], 0, snapshotId)
-# 						cursor.execute(command)
-# 			# print the loading bar
-# 			teamCounter += 1
-# 			percent = float(teamCounter) / float(len(teamsToPull) * 2)
-# 			showLoadingBar(percent)
-# 	# finish the loading bar
-# 	print "#" * 50
-# 	print ""
-# 	connection.commit()
-# 
-# # save the database
-# connection.commit()
-# 
-# getEventTimes = "select time from Swims where event='{}{}' and date>{} and date<{}"
-# updateWithScaled = "update Swims set scaled={} where event='{}{}' and date>{} and date<{} and time={}"
-# # fill out the scaled column
-# print "Scaling times"
-# # convert each swim to a season z-score
-# for simpleYear in range(yearStart, yearEnd):   # for each competition year
-# 	seasonStartTimestamp = convertToTimestamp(simpleYear, seasonLineMonth, seasonLineDay)
-# 	seasonEndTimestamp = convertToTimestamp(simpleYear + 1, seasonLineMonth, seasonLineDay)
-# 	for event in eventsToPull:
-# 		for gender in gendersToPull: # for each event
-# 			cursor.execute(getEventTimes.format(gender, event, seasonStartTimestamp, seasonEndTimestamp))
-# 			times = [x[0] for x in cursor.fetchall()]
-# 			average = sum(times) / len(times)
-# 			print "average for {}{} in {}: {}".format(gender, event, simpleYear, average)
-# 			sd = (sum([(x - average)**2 for x in times]) / len(times)) ** .5 # sqrt(sum of rediduals squared normalized to n)
-# 			updateList = [(x, (x - average) / sd) for x in times]
-# 			for update in updateList:
-# 				command = updateWithScaled.format(update[1], gender, event, seasonStartTimestamp, seasonEndTimestamp, update[0])
-# 				cursor.execute(command)
-# connection.commit()
+cursor.execute(createSnapshotTableCommand);
+snapshotId = random.randint(0, 4294967295) # what are the odds? 100% I'm a lazy programmer
+dateRangeString = "{0}.{1}.{2}-{3}.{1}.{2}".format(yearStart, seasonLineMonth, seasonLineDay, yearEnd)
+teamsString = ",".join(str(team) for team in teamsToPull)
+eventsString = ",".join(eventsToPull)
+cursor.execute(insertSnapshotCommand.format(snapshotId, dateRangeString, teamsString, eventsString))
 
+# ensure the existence of each event table and the Teams/Swimmers tables
+cursor.execute(createSwimsTable)
+cursor.execute(createNameTable.format("Swimmers"))
+cursor.execute(createNameTable.format("Teams"))
+
+# retrieve and add the times to the database
+for simpleYear in range(yearStart, yearEnd):   # for each competition year
+	seasonString = str(simpleYear) + "-" + str(simpleYear + 1)
+	print "Collecting Season {}".format(seasonString)
+	searchStartTimestamp = parameters.convertToTimestamp(simpleYear, seasonLineMonth, seasonLineDay)
+	searchEndTimestamp = parameters.convertToTimestamp(simpleYear + 1, seasonLineMonth, seasonLineDay)
+	teamCounter = 0
+	percent = 0
+	for teamId in teamsToPull:   # for each team
+		for gender in gendersToPull:  # for each gender
+			# pull the roster for this season and gender
+			teamInfo = requestTeamRoster(teamId, seasonString, gender)
+			# add team to the Teams table
+			if not teamInfo[1] is "":  # if there wasn't a 404 error
+				matches = cursor.execute(checkNameTable.format("Teams", teamId))
+				if matches.fetchone() is None:  # if there are no duplicates
+					cursor.execute(addToNameTable.format("Teams", teamInfo[1], teamId))
+			for index, swimmer in enumerate(teamInfo[0]):   # for each swimmer on the team
+				# enumerate this loop to have an index for the loading bar
+				percentOfTeam = float(index) / float(len(teamInfo[0]))
+				showLoadingBar(percent + (percentOfTeam / float(len(teamsToPull) * 2)))
+				# add the swimmer to the Names table
+				matches = cursor.execute(checkNameTable.format("Swimmers", swimmer[1]))
+				if matches.fetchone() is None:
+					cursor.execute(addToNameTable.format("Swimmers", swimmer[0], swimmer[1]))
+				for event in eventsToPull:   # for each of this swimmer's event we're searching
+					swims = requestSwimmer(swimmer[1], event)
+					for swim in swims:   # for each qualified race
+						# add this race to the database
+						command = insertSwimCommand.format(swimmer[1], teamId, swim[1], 0, gender, event, swim[0], 0, snapshotId)
+						cursor.execute(command)
+			# print the loading bar
+			teamCounter += 1
+			percent = float(teamCounter) / float(len(teamsToPull) * 2)
+			showLoadingBar(percent)
+	# finish the loading bar
+	print "#" * 50
+	print ""
+	connection.commit()
+
+getEventTimes = "select time from Swims where event='{}{}' and date>{} and date<{}"
+updateWithScaled = "update Swims set scaled={} where event='{}{}' and date>{} and date<{} and time={}"
+# fill out the scaled column
+print "Scaling times"
+# convert each swim to a season z-score
+for simpleYear in range(yearStart, yearEnd):   # for each competition year
+	seasonStartTimestamp = parameters.convertToTimestamp(simpleYear, seasonLineMonth, seasonLineDay)
+	seasonEndTimestamp = parameters.convertToTimestamp(simpleYear + 1, seasonLineMonth, seasonLineDay)
+	for event in eventsToPull:
+		for gender in gendersToPull: # for each event
+			cursor.execute(getEventTimes.format(gender, event, seasonStartTimestamp, seasonEndTimestamp))
+			times = [x[0] for x in cursor.fetchall()]
+			average = sum(times) / len(times)
+			print "average for {}{} in {}: {}".format(gender, event, simpleYear, average)
+			sd = (sum([(x - average)**2 for x in times]) / len(times)) ** .5 # sqrt(sum of rediduals squared normalized to n)
+			updateList = [(x, (x - average) / sd) for x in times]
+			for update in updateList:
+				command = updateWithScaled.format(update[1], gender, event, seasonStartTimestamp, seasonEndTimestamp, update[0])
+				cursor.execute(command)
+connection.commit()
 print "scaled"
+
+
 print ""
 print "Finding taper swims"
 for simpleYear in range(yearStart, yearEnd):
-	seasonStartTimestamp = convertToTimestamp(simpleYear, seasonLineMonth, seasonLineDay)
-	seasonEndTimestamp = convertToTimestamp(simpleYear + 1, seasonLineMonth, seasonLineDay)
+	seasonStartTimestamp = parameters.convertToTimestamp(simpleYear, seasonLineMonth, seasonLineDay)
+	seasonEndTimestamp = parameters.convertToTimestamp(simpleYear + 1, seasonLineMonth, seasonLineDay)
 	print "Season {}-{}".format(simpleYear, simpleYear + 1)
-	print "From {} to {}".format(seasonStartTimestamp, seasonEndTimestamp)
-	for teamId in [121]: #teamsToPull: Only test UCSD to see what a taper swim looks like
-		# get the average z-score of a given team's swim
-		cursor.execute("select scaled from Swims where team={} and date>{} and date<{}".format(teamId, seasonStartTimestamp, seasonEndTimestamp))
-		averageSeason = cursor.fetchone()[0]
+	print "From timestamp {} to {}".format(seasonStartTimestamp, seasonEndTimestamp)
+	for teamId in teamsToPull:
 		# get a list of all the days this team swam
 		cursor.execute("select date from Swims where team={} and date>{} and date<{}".format(teamId, seasonStartTimestamp, seasonEndTimestamp))
 		dates = cursor.fetchall()
 		dates = list(set(dates)) # this removes duplicates, which there are many
 		meetScores = []			 # populate this with
+		averageScore = 0
 		for date in dates:
-			# did this day have an unusually low average z score?
-			cursor.execute("select avg(scaled) from Swims where team={} and date={}".format(teamId, date[0]))
-			meetScores.append((cursor.fetchone()[0], date[0]))
-		c = "c("
-		for a in meetScores:
-			c += (str(a[0]) + ",")
-		c += ")"
-		print c
-		c = "c("
-		for a in meetScores:
-			c += (str(a[1]) + ",")
-		c += ")"
-		print c
+			# first check if only one swimmer swam. this is indicative of a glitch where I
+			# cannot isolate which roster a swimmer is in if they switched team.
+			cursor.execute("select count(*) from Swims where team={} and date={}".format(teamId, date[0]))
+			if cursor.fetchone()[0] != 7:
+				# get the average scaled time for this day of swimming and add it to the list
+				cursor.execute("select avg(scaled) from Swims where team={} and date={}".format(teamId, date[0]))
+				meetTuple = (cursor.fetchone()[0], date[0])
+				averageScore += meetTuple[0]
+				meetScores.append(meetTuple)
+		averageScore /= len(dates)
+		for date in meetScores:
+			# a taper swim is a swim at a meet with a below average z-score for that season
+			# this can be assumed because, given that a team has dual meets and taper meets
+			# online, there will be a two-node normal distribution. the lower node contains
+			# taper swims. we'll now update them in the database
+			if date[0] < averageScore:
+				cursor.execute("update Swims set taper=1 where team={} and date={}".format(teamId, date[1]))
+			else:
+				cursor.execute("update Swims set taper=2 where team={} and date={}".format(teamId, date[1]))
+		
 
-# print "Finding outliers"
+print "Finding outliers"
+cursor.execute("update Swims set taper=3 where scaled>3")    # a lazy solution. I'm tired
+
 
 connection.commit()
 connection.close()
@@ -225,4 +223,3 @@ print "###################"
 print "Check {} for results".format(databaseFileName)
 print "Written by Kevin Wylder"
 print "contact at wylderkevin@gmail.com"
-print convertToTimestamp(2014, seasonLineMonth, seasonLineDay)
