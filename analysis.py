@@ -14,7 +14,8 @@ print ""
 print "Graphing event Histograms..."
 for event in parameters.eventHistograms:
 	title = parameters.toTitle(event)
-	process = ["Rscript", "histogram_event.R", event, title]
+	database = parameters.databaseFileName
+	process = ["Rscript", "histogram_event.R", event, title, database]
 	subprocess.call(process)
 
 print "done"
@@ -32,14 +33,14 @@ for team in parameters.teamsToReview:
 	startTimestamp = parameters.convertToTimestamp(parameters.reviewYearStart, parameters.seasonLineMonth, parameters.seasonLineDay)
 	endTimestamp = parameters.convertToTimestamp(parameters.reviewYearEnd, parameters.seasonLineMonth, parameters.seasonLineDay)
 	# run the whole history graphing script
-	process = ["Rscript", "team_history.R", str(team), teamName, str(startTimestamp), str(endTimestamp)]
+	process = ["Rscript", "team_history.R", str(team), teamName, str(startTimestamp), str(endTimestamp), database]
 	subprocess.call(process)
 	# run each year's meet analysis
 	for simpleYear in range(parameters.reviewYearStart, parameters.reviewYearEnd):
 		startTimestamp = parameters.convertToTimestamp(simpleYear, parameters.seasonLineMonth, parameters.seasonLineDay)
 		endTimestamp = parameters.convertToTimestamp(simpleYear + 1, parameters.seasonLineMonth, parameters.seasonLineDay)
 		title = "{} {}-{} Season".format(teamName, simpleYear, simpleYear + 1)
-		process = ["Rscript", "team_season.R", str(team), title, str(startTimestamp), str(endTimestamp)]
+		process = ["Rscript", "team_season.R", str(team), title, str(startTimestamp), str(endTimestamp), database]
 		subprocess.call(process)
 
 print "done"
@@ -58,7 +59,3 @@ for swimmer in parameters.swimmersToReview:
 		title = "{}'s {}-{} Season".format(name, simpleYear, simpleYear + 1)
 		process = ["Rscript", "individual_season.R", str(swimmer), title, str(startTimestamp), str(endTimestamp), parameters.databaseFileName]
 		subprocess.call(process)
-	
-	
-		
-		

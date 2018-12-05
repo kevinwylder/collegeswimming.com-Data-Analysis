@@ -4,8 +4,11 @@ import sqlite3
 import random
 import sys
 import parameters
+from bs4 import BeautifulSoup
+import re
+import string
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # College Swimming Spring Break Project 2015                                Kevin Wylder #
 #                                                                                        #
 # This file builds a database from data collected off collegeswimming.com                #
@@ -17,7 +20,7 @@ import parameters
 
 # setup search and output parameters
 parameters = parameters.Parameters()
-databaseFileName = parameters.databaseFileName 
+databaseFileName = parameters.databaseFileName
 eventsToPull = parameters.eventsToPull
 gendersToPull = parameters.gendersToPull
 teamsToPull = parameters.teamsToPull
@@ -26,19 +29,34 @@ yearEnd = parameters.yearEnd
 seasonLineMonth = parameters.seasonLineMonth
 seasonLineDay = parameters.seasonLineDay
 
-swimmerEventUrl = "http://www.collegeswimming.com/swimmer/{}/times/byeventid/{}"
-teamRosterUrl = "http://www.collegeswimming.com/team/{}/mod/teamroster?season={}&gender={}"
+swimmerUrl = "https://www.collegeswimming.com/swimmer/{}"
+swimmerEventUrl = "https://www.collegeswimming.com/swimmer/{}/times/byeventid/{}"
+rosterUrl = "https://www.collegeswimming.com/team/{}/roster?season={}&gender={}"
 
 createSwimsTable = "create table if not exists Swims (swimmer INTEGER, team INTEGER, time REAL, scaled REAL, event TEXT, date INTEGER, taper INTEGER, snapshot INTEGER);"
 insertSwimCommand = "insert into Swims values({}, {}, {}, {}, '{}{}', {}, {}, {});"
 createSnapshotTableCommand = "create table if not exists Snapshots (snapshot INTEGER, date TEXT, teams TEXT, events TEXT);"
 insertSnapshotCommand = "insert into Snapshots values({}, '{}', '{}', '{}');"
 createNameTable = "create table if not exists {} (name TEXT, id INTEGER);"
-checkNameTable = "select id from {} where id={} limit 1;"
+checkNameTable = 'select id from {} where id={} limit 1;'
 addToNameTable = "insert into {} values('{}', {});"
 
 searchStartTimestamp = 0
 searchEndTimestamp = 0
+
+def normalizeName(name):
+	nameParts = name.split()
+	name = " ".join([part.lower().capitalize() for part in nameParts])
+	n = name.find("'")
+	if n > -1:
+		name = name[:n+1] + name[n+1:].capitalize()
+	return name
+
+def sqlsafe(name):
+	n = name.find("'")
+	if n > -1:
+		name = name[:n+1] + "'" + name[n+1:]
+	return name
 
 def showLoadingBar(percent):
 	chars = int(percent * 50)
@@ -46,49 +64,60 @@ def showLoadingBar(percent):
 	sys.stdout.flush()
 
 def requestSwimmer(swimmerId, event):
+
 	'returns this event\'s swims for the swimmerId in the format (date, time)'
 	swimmerData = []
-	url = swimmerEventUrl.format(swimmerId, event)
-	page = urllib2.urlopen(url)
-	source = page.read()
-	eventHistory = json.loads(source)
-	for swim in eventHistory:
-		# convert the date string to epoch
-		splitDate = swim["dateofswim"].split("-")		
-		date = parameters.convertToTimestamp(splitDate[0], splitDate[1], splitDate[2])
-		if date > searchStartTimestamp and date < searchEndTimestamp:  # defined below the timestamp function and updated every year loop
-			swimTuple = (date, swim["time"])
-			swimmerData.append(swimTuple)
-	return swimmerData
-
-def requestTeamRoster(teamId, season, gender):
-	'gets a list of (Name, swimmerId) tuples and the team name for a given teamId'
-	teamRoster = []
-	url = teamRosterUrl.format(teamId, season, gender)
+	swimmerEvents = []
+	url = swimmerUrl.format(swimmerId)
 	try:
 		page = urllib2.urlopen(url)
 		source = page.read()
-	except urllib2.HTTPError:
+	except urllib2.HTTPError as e:
+		print e
 		return ([],"")
-	# our own form of parsing. better than using an external library
-	rows = source.split("<td><a href=\"/swimmer/")
-	for row in rows:
-		if "</a></td>" in row:	# having this string ensures good data
-			swimmerInfo = row.split("</a></td>")[0]
-			swimmerIdSplit = swimmerInfo.split("\">")
-			# sanitize the name
-			swimmerIdSplit[1] = swimmerIdSplit[1].translate(None, "';\".")
-			if "," in swimmerIdSplit[1]:
-				nameSplit = swimmerIdSplit[1].split(", ")
-				teammate = (nameSplit[1] + " " + nameSplit[0], swimmerIdSplit[0])
-				teamRoster.append(teammate)
-			else:
-				teammate = (swimmerIdSplit[1], swimmerIdSplit[0])
-				teamRoster.append(teammate)
-	teamName = source.split("<h1 class=\"team-name\">")[1].split("</h1>")[0]
-	return (teamRoster, teamName)
+	soup = BeautifulSoup(source, 'html.parser')
+	selection = soup.find("select", class_="form-control input-sm js-event-id-selector")
+	if selection:
+		for option in selection.find_all("option", class_="event"):
+			thisEvent = option["value"]
+			swimmerEvents.append(thisEvent)
 
-	
+	if event in swimmerEvents:
+		url = swimmerEventUrl.format(swimmerId, event)
+		page = urllib2.urlopen(url)
+		source = page.read()
+		eventHistory = json.loads(source)
+		for swim in eventHistory:
+			# convert the date string to epoch
+			splitDate = swim["dateofswim"].split("-")
+			date = parameters.convertToTimestamp(splitDate[0], splitDate[1], splitDate[2])
+			if date > searchStartTimestamp and date < searchEndTimestamp:  # defined below the timestamp function and updated every year loop
+				swimTuple = (date, swim["time"])
+				swimmerData.append(swimTuple)
+	return swimmerData
+
+def getRoster(teamId, season, gender):
+	team = {}
+	'gets a list of (Name, swimmerId) tuples and the team name for a given teamId'
+	url = rosterUrl.format(teamId, season, gender)
+	try:
+		page = urllib2.urlopen(url)
+		source = page.read()
+	except urllib2.HTTPError as e:
+		print e
+		return ([],"")
+	soup = BeautifulSoup(source, 'html.parser')
+	team["name"] = soup.find("h1", class_="c-toolbar__title").text
+
+	tableBody = soup.find("table", class_="c-table-clean c-table-clean--middle c-table-clean--fixed table table-hover").tbody
+	team["roster"] = []
+	for tableRow in tableBody.find_all("tr"):
+		swimmerId = tableRow.td.a["href"].split("/")[-1]
+		swimmerName = normalizeName(unicode(tableRow.td.strong.text))
+		team["roster"].append( (swimmerName, swimmerId) )
+	return team
+
+
 ##############################
 # !!! script starts here !!! #
 ##############################
@@ -121,20 +150,21 @@ for simpleYear in range(yearStart, yearEnd):   # for each competition year
 	for teamId in teamsToPull:   # for each team
 		for gender in gendersToPull:  # for each gender
 			# pull the roster for this season and gender
-			teamInfo = requestTeamRoster(teamId, seasonString, gender)
+			team = getRoster(teamId, seasonString, gender)
 			# add team to the Teams table
-			if not teamInfo[1] is "":  # if there wasn't a 404 error
+			if not team["name"] is "":  # if there wasn't a 404 error
 				matches = cursor.execute(checkNameTable.format("Teams", teamId))
 				if matches.fetchone() is None:  # if there are no duplicates
-					cursor.execute(addToNameTable.format("Teams", teamInfo[1], teamId))
-			for index, swimmer in enumerate(teamInfo[0]):   # for each swimmer on the team
+					cursor.execute(addToNameTable.format("Teams", team["name"], teamId))
+			for index, swimmer in enumerate(team["roster"]):
+				# print swimmer[0]   # for each swimmer on the team
 				# enumerate this loop to have an index for the loading bar
-				percentOfTeam = float(index) / float(len(teamInfo[0]))
+				percentOfTeam = float(index) / float(len(team["roster"]))
 				showLoadingBar(percent + (percentOfTeam / float(len(teamsToPull) * 2)))
 				# add the swimmer to the Names table
 				matches = cursor.execute(checkNameTable.format("Swimmers", swimmer[1]))
 				if matches.fetchone() is None:
-					cursor.execute(addToNameTable.format("Swimmers", swimmer[0], swimmer[1]))
+					cursor.execute(addToNameTable.format("Swimmers", sqlsafe(swimmer[0]), swimmer[1]))
 				for event in eventsToPull:   # for each of this swimmer's event we're searching
 					swims = requestSwimmer(swimmer[1], event)
 					for swim in swims:   # for each qualified race
@@ -207,7 +237,7 @@ for simpleYear in range(yearStart, yearEnd):
 				cursor.execute("update Swims set taper=1 where team={} and date={}".format(teamId, date[1]))
 			else:
 				cursor.execute("update Swims set taper=2 where team={} and date={}".format(teamId, date[1]))
-		
+
 
 print "Finding outliers"
 cursor.execute("update Swims set taper=3 where scaled>3")    # a lazy solution. I'm tired
