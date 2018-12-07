@@ -3,12 +3,12 @@ Written by Kevin Wylder
 TL;DR - Set the parameters in parameters.py. Then run the following commands
             python main.py
             python analysis.py
-        and look in the graphs directory for fun data. 
+        and look in the graphs directory for fun data.
         You can check the database for your own analysis, but you'd have to RTFM.
 
 Files:
 parameters.py
-    A python class that controls main.py and analysis.py. This is just a list of editable 
+    A python class that controls main.py and analysis.py. This is just a list of editable
     parameters. If you change the Global Parameters, delete everything and restart main.py
     Editing analysis.py params is fine. This also includes some support functions
     Global parameters -
@@ -19,25 +19,25 @@ parameters.py
         eventsToPull: an array of events that will be searched for in each swimmer
         gendersToPull: an array of which genders to search for. "M" and/or "F"
         teamsToPull: an array of teamIds that will be searched for. You can use the range
-                     function, but this will 
+                     function, but this will
         yearStart: the starting year of this search
         yearEnd: the ending year of this search
     analysis.py parameters -
     	eventHistograms: a list of events to graph with histogram_event.R
         teamsToReview: a list of teams to graph with team_history.R and team_season.R
         swimmersToReview: a list of swimmers to graph with individual_season.R
-        reviewYearStart and reviewYearEnd: the starting analysis year. this is used in 
+        reviewYearStart and reviewYearEnd: the starting analysis year. this is used in
                                            conjunction with the gobal parameters
-        
+
 main.py
-    A python script to create the database of swims. This is the main script of the 
+    A python script to create the database of swims. This is the main script of the
     project so you should definitely start by running this. It may take a while, and
-    obviously requires an internet connection. The result of running this is a sqlite3 
+    obviously requires an internet connection. The result of running this is a sqlite3
     database in the working directory with the name set in parameters.py
 
 analysis.py
     A python script to graph whatever is specified in parameters.py. This script is really
-    just a wrapper for the R scripts, which do all the real work. 
+    just a wrapper for the R scripts, which do all the real work.
 
 histogram_event.R
     creates a graph of an event over the specified time period
@@ -53,9 +53,9 @@ database structure
     The table "Swims" will hold all the swims pulled off collegeswimming.com.
     the columns of these tables in the database are as follows (in order)
     --------------------------------------------------------------------
-    | swimmer | team | time | scaled | event | date | taper | snapshot | 
+    | swimmer | team | time | scaled | event | date | taper | snapshot |
     --------------------------------------------------------------------
-    swimmer: an int for the swimmer's teamId on collegeswimming.com
+    swimmer: an int for the swimmer's ID on collegeswimming.com
     team: an int for the team's teamId on collegeswimming.com
     time: a float representing the number of seconds the swim took
     scaled: a float z score according to this event's season
@@ -68,15 +68,15 @@ database structure
         3 - this is an outlier swim (more than 3 sd from their mean)
     snapshot: an integer that corresponds to when this row was added to the database. This
               is just to help control duplicates and have more info about the farming.
-    
-    "Swimmers" and "Teams" are tables to match Strings to swimmer or team identification 
+
+    "Swimmers" and "Teams" are tables to match Strings to swimmer or team identification
     ints from collegeswimming.com. These tables will have the following columns:
     -------------
     | name | id |
     -------------
     name: A string representation of an entity (ie. "Kevin Wylder" or "UC San Diego")
     id: the integer that matches this entity (ex. "UC San Diego" has 121 as it's id)
-    
+
     "Snapshots" is a table with information about the parameters of the search when this
     data was extracted. It has the columns:
     ------------------------------------
@@ -85,11 +85,11 @@ database structure
     snapshot: a integer for this pull that will match many rows in the event tables
     date: a human readable string displaying specified time range for this pull
           (ex: "2014.9.15-2015.9.15")
-    teams: a string list of teamIds specified in this pull, separated by "," 
+    teams: a string list of teamIds specified in this pull, separated by ","
           (ex: "121,122,123,125")
-    events: a string list of event table names in this pull, separated by "," 
+    events: a string list of event table names in this pull, separated by ","
             (ex: "M150Y,F150Y,M4100Y,F4100Y")
-        
+
 
 collegeswimming.com event structure
     the definition an event is as follows
@@ -111,13 +111,13 @@ collegeswimming.com event structure
         150Y - 50 Yard Freestyle
         4100Y - 100 Yard Butterfly
         3200L - 200 Meter Breaststroke
-    
+
 collegeswimming.com url structure
     There are two urls we'll use from the website. The first is a list of the team roster.
         http://www.collegeswimming.com/team/{A}/mod/teamroster?season={B}&gender={C}
     This url returns an HTML page, which must be scraped for swimmer names and ids.
     The curly braces "{}" are omitted and replaced with
-    A: The team's id number. This is an index on the website. You can manually look this 
+    A: The team's id number. This is an index on the website. You can manually look this
        up by searching for a team and looking at the number in the url
     B: The range of years to get swimmers. In the format
                         SSSS-EEEE
@@ -128,11 +128,10 @@ collegeswimming.com url structure
     C: The gender of the roster. A 1 char representation.
         M - Men's team roster
         F - Women's team roster
-    
+
     The second url we'll use is for a specific swimmer's event
     http://www.collegeswimming.com/swimmer/{A}/times/byeventid/{B}
     This url returns all the swims of the specified event json encoded.
     The curly braces "{}" are omitted and replaced with
     A: The swimmer's id number. This should be retreived from the team roster
     B: the event structure. This is defined above as "collegeswimming.com event structure"
-    
