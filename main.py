@@ -127,7 +127,7 @@ connection = sqlite3.connect(databaseFileName)
 cursor = connection.cursor()
 
 # add information about this snapshot to the Snapshots table (and create it if it doesn't exist)
-cursor.execute(createSnapshotTableCommand);
+cursor.execute(createSnapshotTableCommand)
 snapshotId = random.randint(0, 4294967295) # what are the odds? 100% I'm a lazy programmer
 dateRangeString = "{0}.{1}.{2}-{3}.{1}.{2}".format(yearStart, seasonLineMonth, seasonLineDay, yearEnd)
 teamsString = ",".join(str(team) for team in teamsToPull)
