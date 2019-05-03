@@ -10,19 +10,19 @@ class Parameters:
 	seasonLineDay = 15
 
 	# main.py parameters
-	eventsToPull = ["5200Y"]
-	gendersToPull = ["F"]
+	eventsToPull = ["150Y"]
+	gendersToPull = ["M"]
 #	teamsToPull = [21,114,209,227,230,319,377,434,457]
-	teamsToPull = [114,209,227,230,319,377,434,457]
-	yearStart = 2016
-	yearEnd = 2017
+	teamsToPull = [184]
+	yearStart = 2017
+	yearEnd = 2018
 
 	# analysis parameters
 	eventHistograms = ["F5200Y"]
-	teamsToReview = [114]
-	swimmersToReview = [347491]
-	reviewYearStart = 2016
-	reviewYearEnd = 2017
+	teamsToReview = [184]
+	swimmersToReview = [325120]
+	reviewYearStart = 2017
+	reviewYearEnd = 2018
 
 
 	def convertToTimestamp(self, year, month, day):
