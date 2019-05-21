@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 # for more detail on the structure of the database, the global variables in this file,   #
 # or the collegeswimming.com website structure, see the README                           #
 #                                                                                        #
-# From here on out, 90 character width isn't guarenteed                                   #
+# From here on out, 90 character width isn't guarenteed                                  #
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 # setup search and output parameters
@@ -29,10 +29,12 @@ yearEnd = parameters.yearEnd
 seasonLineMonth = parameters.seasonLineMonth
 seasonLineDay = parameters.seasonLineDay
 
+# URL's for pulling data from
 swimmerUrl = "https://www.collegeswimming.com/swimmer/{}"
 swimmerEventUrl = "https://www.collegeswimming.com/swimmer/{}/times/byeventid/{}"
 rosterUrl = "https://www.collegeswimming.com/team/{}/roster?season={}&gender={}"
 
+#Missing data in createXYZTable is filled in by data put into insertXYZCommand using .format()
 createSwimsTable = "create table if not exists Swims (swimmer INTEGER, team INTEGER, time REAL, scaled REAL, event TEXT, date INTEGER, taper INTEGER, snapshot INTEGER);"
 insertSwimCommand = "insert into Swims values({}, {}, {}, {}, '{}{}', {}, {}, {});"
 createSnapshotTableCommand = "create table if not exists Snapshots (snapshot INTEGER, date TEXT, teams TEXT, events TEXT);"
@@ -45,6 +47,12 @@ searchStartTimestamp = 0
 searchEndTimestamp = 0
 
 def normalizeName(name):
+    """
+    Input a string name.
+    Output a string where the first letter of every word is capitalized.
+    Makes sure every name is properly formatted according to english grammar rules.
+    Input "Brad o'hara" Output "Brad O'Hara"
+    """
     nameParts = name.split()
     name = " ".join([part.lower().capitalize() for part in nameParts])
     n = name.find("'")
@@ -53,27 +61,42 @@ def normalizeName(name):
     return name
 
 def sqlsafe(name):
+    """
+    Input some string
+    Output edited string where apostrophes are doubled
+    Input " ' " output " '' "
+    """
     n = name.find("'")
     if n > -1:
         name = name[:n+1] + "'" + name[n+1:]
     return name
 
 def showLoadingBar(percent):
+    """
+    Input some value between 0 and 1
+    Print a string of "#" and " " characters ending with a floating point percent value
+    """
     chars = int(percent * 50)
-    sys.stdout.write(("#" * chars) + (" " * (50 - chars)) + " {:10.2f}%\r".format(100 * percent))
+    sys.stdout.write("\n" + ("#" * chars) + (" " * (50 - chars)) + " {:10.2f}%\r".format(100 * percent))
     sys.stdout.flush()
 
 def requestSwimmer(swimmerId, event):
+    """
+    Input a swimmerID and event.
+    Output list of tuples containing a swim time and the date that time was achieved.
+    tuple format is (date, swimtime)
+    """
+    #QUESTION: does this only return swim data that is in a certain time frame?
 
     'returns this event\'s swims for the swimmerId in the format (date, time)'
     swimmerData = []
     swimmerEvents = []
     url = swimmerUrl.format(swimmerId)
-    try:
+    try:# to open a url for that swimmer and read their data
         page = urllib.request.urlopen(url)
         source = page.read()
     except urllib.request.HTTPError as e:
-        print(e)
+        print(e) # otherwise print out the error and return empty tuple
         return ([],"")
     soup = BeautifulSoup(source, 'html.parser')
     selection = soup.find("select", class_="form-control input-sm js-event-id-selector")
@@ -82,7 +105,9 @@ def requestSwimmer(swimmerId, event):
             thisEvent = option["value"]
             swimmerEvents.append(thisEvent)
 
+    # If the event you want data on is contained within the list of events they have data for that swimmer on, then add that data to the swimmerData list
     if event in swimmerEvents:
+        #the next three lines seem repetitive, (see above) do we need them or can we just make the part above better?
         url = swimmerEventUrl.format(swimmerId, event)
         page = urllib.request.urlopen(url)
         source = page.read()
@@ -97,6 +122,10 @@ def requestSwimmer(swimmerId, event):
     return swimmerData
 
 def getRoster(teamId, season, gender):
+    """
+        Input: a teamId, season, and gender used to uniquely identify a team
+        Output: List of tuples containing swimmer names and IDs
+    """
     team = {}
     'gets a list of (Name, swimmerId) tuples and the team name for a given teamId'
     url = rosterUrl.format(teamId, season, gender)
@@ -129,7 +158,7 @@ cursor = connection.cursor()
 # add information about this snapshot to the Snapshots table (and create it if it doesn't exist)
 cursor.execute(createSnapshotTableCommand)
 snapshotId = random.randint(0, 4294967295) # what are the odds? 100% I'm a lazy programmer
-dateRangeString = "{0}.{1}.{2}-{3}.{1}.{2}".format(yearStart, seasonLineMonth, seasonLineDay, yearEnd)
+dateRangeString = "{0}.{1}.{2}-{3}.{1}.{2}".format(yearStart, seasonLineMonth, seasonLineDay, yearEnd)#creates a string representing a range of dates equal to yearEnd-yearStart years
 teamsString = ",".join(str(team) for team in teamsToPull)
 eventsString = ",".join(eventsToPull)
 cursor.execute(insertSnapshotCommand.format(snapshotId, dateRangeString, teamsString, eventsString))
@@ -248,9 +277,8 @@ cursor.execute("update Swims set taper=3 where scaled>3")    # a lazy solution. 
 
 connection.commit()
 connection.close()
-print ("")
-print ("")
-print ("###################")
+
+print ("\n\n###################")
 print ("# script complete #")
 print ("###################")
 print ("Check {} for results".format(databaseFileName))
