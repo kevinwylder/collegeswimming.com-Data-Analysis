@@ -10,7 +10,7 @@ class Parameters:
 	seasonLineDay = 15
 
 	# main.py parameters
-	eventsToPull = ["150Y"]
+	eventsToPull = ["150Y", "1100Y"]
 	gendersToPull = ["M"]
 #	teamsToPull = [21,114,209,227,230,319,377,434,457]
 	teamsToPull = [184]
@@ -24,7 +24,7 @@ class Parameters:
 	reviewYearStart = 2017
 	reviewYearEnd = 2018
 
-
+    # In the future these should be moved somewhere else and then we can just delete this entire file...ideally.
 	def convertToTimestamp(self, year, month, day):
 		'converts a given month day and year into a timestamp. Why is this so hard?'
 		return (datetime.datetime(int(year), int(month), int(day)) - datetime.datetime(1970,1,1)).total_seconds()
