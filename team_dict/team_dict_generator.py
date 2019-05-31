@@ -8,15 +8,11 @@ def createTeamDict():
     while (teamIdCounter < MAX_TEAM_ID + 1):
         'gets a list of (Name, swimmerId) tuples and the team name for a given teamId'
         url = TEAM_URL.format(teamIdCounter)
-        print(url)
         try:
             page = urllib.request.urlopen(url)
             source = page.read()
         except urllib.request.HTTPError as e:
             print(e)
-            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
-            message = template.format(type(e).__name__, e.args)
-            print(message)
             teamIdCounter = teamIdCounter + 1
             continue
 
@@ -24,8 +20,6 @@ def createTeamDict():
         teamName = soup.find("h1", class_="c-toolbar__title").text
         team_dict[teamName] = teamIdCounter
         teamIdCounter = teamIdCounter + 1
-        print(teamName)
-    print(team_dict)
     dict_file = open("team_dict.py","w+")
     dict_file.write("TEAM_DICT = " + str(team_dict))
     dict_file.close()

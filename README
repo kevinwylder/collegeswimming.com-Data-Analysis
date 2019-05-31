@@ -1,7 +1,7 @@
 Written by Kevin Wylder
 
-TL;DR - Set the parameters in parameters.py. Then run the following commands
-            python main.py
+TL;DR - Set the parameters when you run the program. Run the following commands
+            python get_swim_data.py
             python analysis.py
         and look in the graphs directory for fun data.
         You can check the database for your own analysis, but you'd have to RTFM.
