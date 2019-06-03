@@ -251,8 +251,9 @@ def inputsForSwimDataSearch(allDefault = False):
         gendersToPull = input("M, F, or M F? ").split()
         yearStart = eval(input("Input start year"))
         yearEnd = eval(input("Input end year"))
+        eventsToPull = DEFAULT_EVENTS_TO_PULL
     return getSwimData(teamsToPull, gendersToPull, yearStart, yearEnd, eventsToPull, databaseFileName)
 
 def main():
-    inputsForSwimDataSearch(True)
+    inputsForSwimDataSearch(False)
 main()
