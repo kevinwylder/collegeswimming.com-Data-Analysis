@@ -22,13 +22,15 @@ SWIMMER_EVENT_URL = "https://www.collegeswimming.com/swimmer/{}/times/byeventid/
 ROSTER_URL = "https://www.collegeswimming.com/team/{}/roster?season={}&gender={}"
 
 # Missing data in createXYZTable is filled in by data put into insertXYZCommand using .format()
-CREATE_SWIMS_TABLE = "create table if not exists Swims (swimmer INTEGER, team INTEGER, time REAL, scaled REAL, event TEXT, date INTEGER, taper INTEGER, snapshot INTEGER);"
-INSERT_SWIM_COMMAND = "insert into Swims values({}, {}, {}, {}, '{}{}', {}, {}, {});"
-CREATE_SNAPSHOT_TABLE_COMMAND = "create table if not exists Snapshots (snapshot INTEGER, date TEXT, teams TEXT, events TEXT);"
-INSERT_SNAPSHOT_COMMAND = "insert into Snapshots values({}, '{}', '{}', '{}');"
-CREATE_NAME_TABLE = "create table if not exists {} (name TEXT, id INTEGER);"
-CHECK_NAME_TABLE = 'select id from {} where id={} limit 1;'
-ADD_TO_NAME_TABLE = "insert into {} values('{}', {});"
+CREATE_SWIMS_TABLE = "CREATE TABLE IF NOT EXISTS Swims (swimmer INTEGER, team INTEGER, time REAL, scaled REAL, meet_id INTEGER, event TEXT, date INTEGER, taper INTEGER, snapshot INTEGER);"
+INSERT_SWIM_COMMAND = "INSERT INTO Swims VALUES({}, {}, {}, {}, {}, '{}{}', {}, {}, {});"
+CREATE_SNAPSHOT_TABLE_COMMAND = "CREATE TABLE IF NOT EXISTS Snapshots (snapshot INTEGER, date TEXT, teams TEXT, events TEXT);"
+INSERT_SNAPSHOT_COMMAND = "INSERT INTO Snapshots VALUES({}, '{}', '{}', '{}');"
+CREATE_NAME_TABLE = "CREATE TABLE IF NOT EXISTS {} (name TEXT, id INTEGER);"
+CHECK_NAME_TABLE = 'SELECT id FROM {} WHERE id={} LIMIT 1;'
+ADD_TO_NAME_TABLE = "INSERT INTO {} VALUES('{}', {});"
+
+
 
 # Default inputs for team_dict_generator
 DEFAULT_SEASON = "2017-2018"

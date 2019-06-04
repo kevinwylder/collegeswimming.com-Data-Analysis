@@ -29,8 +29,8 @@ def to_title(event_string):
     gender = event_string[0]
     stroke = event_string[1]
     distance = event_string[2:-1]
-    gender_map = {"M":"Men", "F":"Women"}
-    stroke_map = {"1":"Freestyle", "2":"Backstroke", "3":"Breaststroke", "4":"Butterfly", "5":"IM"}
+    gender_map = {"M": "Men", "F": "Women"}
+    stroke_map = {"1": "Freestyle", "2": "Backstroke", "3": "Breaststroke", "4": "Butterfly", "5": "IM"}
     return "{}'s {} Yard {}".format(gender_map[gender], distance, stroke_map[stroke])
 
 

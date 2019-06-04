@@ -30,7 +30,6 @@ def request_swimmer(swimmer_id, event, search_start_timestamp, search_end_timest
     swimmer_data = []
     swimmer_events = []
     url = SWIMMER_URL.format(swimmer_id)
-    print(url)
     try:  # to open a url for that swimmer and read their data
         page = urllib.request.urlopen(url)
         source = page.read()
@@ -47,18 +46,17 @@ def request_swimmer(swimmer_id, event, search_start_timestamp, search_end_timest
     # that data to swimmer_data
     if event in swimmer_events:
         url = SWIMMER_EVENT_URL.format(swimmer_id, event)
-        print(url)
         page = urllib.request.urlopen(url)
         source = page.read()
-        eventHistory = json.loads(source)
-        for swim in eventHistory:
+        event_history = json.loads(source)
+        for swim in event_history:
             # convert the date string to epoch
             split_date = swim["dateofswim"].split("-")
             date = convert_to_time(int(split_date[0]), int(split_date[1]), int(split_date[2]))
             if search_start_timestamp < date < search_end_timestamp:
                 # ^^ defined below the timestamp function and updated every year loop
-                swim_tuple = (date, swim["time"])
-                swimmer_data.append(swim_tuple)
+                swim_list = [date, swim["time"], swim["meet_id"]]
+                swimmer_data.append(swim_list)
     return swimmer_data
 
 
@@ -70,7 +68,6 @@ def get_roster(team_id, season, gender):
     team = {}
     'gets a list of (Name, swimmer_id) tuples and the team name for a given team_id'
     url = ROSTER_URL.format(team_id, season, gender)
-    print(url)
     try:
         page = urllib.request.urlopen(url)
         source = page.read()
@@ -147,7 +144,7 @@ def get_swim_data(teams_to_pull, genders_to_pull,
                         sys.stdout.flush()
                         for swim in swims:   # for each qualified race
                             # add this race to the database
-                            command = INSERT_SWIM_COMMAND.format(swimmer[1], team_id, swim[1], 0, gender, event, swim[0], 0, snapshot_id)
+                            command = INSERT_SWIM_COMMAND.format(swimmer[1], team_id, swim[1], 0, swim[2], gender, event, swim[0], 0, snapshot_id)
                             cursor.execute(command)
                 # print the loading bar
                 team_counter += 1
@@ -155,8 +152,8 @@ def get_swim_data(teams_to_pull, genders_to_pull,
                 show_loading_bar(percent)
         connection.commit()
 
-    get_event_times = "select time from Swims where event='{}{}' and date>{} and date<{}"#I can update this a bit (See notes)
-    update_with_scaled = "update Swims set scaled={} where event='{}{}' and date>{} and date<{} and time={}"
+    get_event_times = "SELECT time FROM Swims WHERE event='{}{}' AND date>{} AND date<{}"#I can update this a bit (See notes)
+    update_with_scaled = "UPDATE Swims SET scaled={} WHERE event='{}{}' AND date>{} AND date<{} AND time={}"
     # fill out the scaled column
     print ("Scaling times")
     # convert each swim to a season z-score
@@ -192,7 +189,9 @@ def get_swim_data(teams_to_pull, genders_to_pull,
         print ("From timestamp {} to {}".format(season_start_timestamp, season_end_timestamp))
         for team_id in teams_to_pull:
             # get a list of all the days this team swam
-            cursor.execute("select date from Swims where team={} and date>{} and date<{}".format(team_id, season_start_timestamp, season_end_timestamp))
+            cursor.execute("SELECT date FROM Swims WHERE team={} AND date>{} AND date<{}".format(team_id,
+                                                                                                 season_start_timestamp,
+                                                                                                 season_end_timestamp))
             dates = cursor.fetchall()
             dates = list(set(dates)) # this removes duplicates, which there are many
             meet_scores = []             # populate this with
@@ -200,10 +199,10 @@ def get_swim_data(teams_to_pull, genders_to_pull,
             for date in dates:
                 # first check if only one swimmer swam. this is indicative of a glitch where I
                 # cannot isolate which roster a swimmer is in if they switched team.
-                cursor.execute("select count(*) from Swims where team={} and date={}".format(team_id, date[0]))
+                cursor.execute("SELECT count(*) FROM Swims WHERE team={} AND date={}".format(team_id, date[0]))
                 if cursor.fetchone()[0] != 7:
                     # get the average scaled time for this day of swimming and add it to the list
-                    cursor.execute("select avg(scaled) from Swims where team={} and date={}".format(team_id, date[0]))
+                    cursor.execute("SELECT avg(scaled) FROM Swims WHERE team={} AND date={}".format(team_id, date[0]))
                     meet_tuple = (cursor.fetchone()[0], date[0])
                     average_score += meet_tuple[0]
                     meet_scores.append(meet_tuple)
@@ -214,12 +213,12 @@ def get_swim_data(teams_to_pull, genders_to_pull,
                 # online, there will be a two-node normal distribution. the lower node contains
                 # taper swims. we'll now update them in the database
                 if date[0] < average_score:
-                    cursor.execute("update Swims set taper=1 where team={} and date={}".format(team_id, date[1]))
+                    cursor.execute("UPDATE Swims SET taper=1 WHERE team={} AND date={}".format(team_id, date[1]))
                 else:
-                    cursor.execute("update Swims set taper=2 where team={} and date={}".format(team_id, date[1]))
+                    cursor.execute("UPDATE Swims SET taper=2 WHERE team={} AND date={}".format(team_id, date[1]))
 
     print ("Finding outliers")
-    cursor.execute("update Swims set taper=3 where scaled>3")  # a lazy solution. I'm tired << let's fix that
+    cursor.execute("UPDATE Swims SET taper=3 WHERE scaled>3")  # a lazy solution. I'm tired << let's fix that
 
     connection.commit()
     connection.close()
