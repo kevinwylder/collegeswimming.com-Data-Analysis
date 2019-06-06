@@ -2,5 +2,7 @@
 graphs/*
 .RData
 .RHistory
-.history
+*.history
 *.pyc
+.idea
+
