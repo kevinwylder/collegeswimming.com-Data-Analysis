@@ -1,14 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="ce786de9-c024-4206-8d94-78148c7637e7" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/constants.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/get_swim_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/get_swim_data.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/helperfunctions.py" beforeDir="false" afterPath="$PROJECT_DIR$/helperfunctions.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/process_swim_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/process_swim_data.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/team_dict/team_dict_generator.py" beforeDir="false" afterPath="$PROJECT_DIR$/team_dict/team_dict_generator.py" afterDir="false" />
-    </list>
+    <list default="true" id="ce786de9-c024-4206-8d94-78148c7637e7" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
