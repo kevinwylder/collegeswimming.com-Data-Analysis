@@ -18,6 +18,19 @@ from bs4 import BeautifulSoup
 #                                                                                        #
 # From here on out, 90 character width isn't guarenteed                                  #
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# URL's for pulling data from
+SWIMMER_URL = "https://www.collegeswimming.com/swimmer/{}"
+SWIMMER_EVENT_URL = "https://www.collegeswimming.com/swimmer/{}/times/byeventid/{}"
+ROSTER_URL = "https://www.collegeswimming.com/team/{}/roster?season={}&gender={}"
+
+# Missing data in createXYZTable is filled in by data put into insertXYZCommand using .format()
+CREATE_SWIMS_TABLE = "CREATE TABLE IF NOT EXISTS Swims (swimmer INTEGER, team INTEGER, time REAL, scaled REAL, meet_id INTEGER, event TEXT, date INTEGER, taper INTEGER, snapshot INTEGER);"
+INSERT_SWIM_COMMAND = "INSERT INTO Swims VALUES({}, {}, {}, {}, {}, '{}{}', {}, {}, {});"
+CREATE_SNAPSHOT_TABLE_COMMAND = "CREATE TABLE IF NOT EXISTS Snapshots (snapshot INTEGER, date TEXT, teams TEXT, events TEXT);"
+INSERT_SNAPSHOT_COMMAND = "INSERT INTO Snapshots VALUES({}, '{}', '{}', '{}');"
+CREATE_NAME_TABLE = "CREATE TABLE IF NOT EXISTS {} (name TEXT, id INTEGER);"
+CHECK_NAME_TABLE = 'SELECT id FROM {} WHERE id={} LIMIT 1;'
+ADD_TO_NAME_TABLE = "INSERT INTO {} VALUES('{}', {});"
 
 
 def request_swimmer(swimmer_id, event, search_start_timestamp, search_end_timestamp):
@@ -66,7 +79,7 @@ def get_roster(team_id, season, gender):
         Output: List of tuples containing swimmer names and IDs
     """
     team = {}
-    'gets a list of (Name, swimmer_id) tuples and the team name for a given team_id'
+    #gets a list of (Name, swimmer_id) tuples and the team name for a given team_id
     url = ROSTER_URL.format(team_id, season, gender)
     try:
         page = urllib.request.urlopen(url)
