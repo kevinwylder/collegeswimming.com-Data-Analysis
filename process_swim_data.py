@@ -31,25 +31,26 @@ def get_athlete_data(swims, swimmers, teams, event_list):
     full_dataset = swims.join(swimmers.set_index('id'), on='swimmer').join(teams.set_index('id'), on='team')
     grouped_dataset = full_dataset.groupby(["swimmer", "event"])
     team_data = []
+    swimmer_event_pairs_used = grouped_dataset.groups.keys()
     for swimmer in swimmers["id"]:
         for event in event_list:
             athlete_name = swimmers[swimmers['id'] == swimmer]["athlete_name"].tolist()[0]  # TODO: find better way
-            try:
+            if (swimmer, event) not in swimmer_event_pairs_used:
+                team = full_dataset[full_dataset["swimmer"] == swimmer]["team_name"].unique().tolist()
+                # TODO: there has to be a better way to do this ^^
+                team_data.append({"athlete_name": athlete_name, "event": event, "team": team, "minimum_time": None,
+                                  "average_time": None, "median_time": None})
+            else:
                 individual_event_data = grouped_dataset.get_group((swimmer, event))
                 team = individual_event_data[individual_event_data["swimmer"] == swimmer]["team_name"].unique().tolist()
                 # TODO: there has to be a better way to do this ^^
                 minimum_time = individual_event_data["time"].min()
                 average_time = individual_event_data["time"].mean()
+                median_time = individual_event_data["time"].median()
                 team_data.append({"athlete_name": athlete_name, "event": event, "team": team,
-                                  "minimum_time": minimum_time, "average_time": average_time})
-            except KeyError as e:  # this was used in case a swimmer didn't participate in a given event and/or couldn't
-                # be connected with a team to assign them to a team (or None) if possible
-                team = full_dataset[full_dataset["swimmer"] == swimmer]["team_name"].unique().tolist()
-                # TODO: there has to be a better way to do this ^^
-                team_data.append({"athlete_name": athlete_name, "event": event, "team": team, "minimum_time": None,
-                                  "average_time": None})
+                                  "minimum_time": minimum_time, "average_time": average_time, "median_time": median_time})
 
-    team_data = pd.DataFrame(team_data, columns=["athlete_name", "event", "team", "minimum_time", "average_time"])
+    team_data = pd.DataFrame(team_data, columns=["athlete_name", "event", "team", "minimum_time", "average_time", "median_time"])
     # This will have every possible athlete-event pairing possible, even if an athlete hasn't done that event before
     return team_data
 
@@ -107,6 +108,7 @@ def get_team_lineup(swims, swimmers, teams, event_list, meet_id):
     # updates the dictionary made above so that events an athlete participated in are True (1)
     for athlete, athlete_data in group_by_individual:
         athlete_name = swimmers[swimmers['id'] == athlete]["athlete_name"].tolist()[0]  # TODO: find better way
+        print(athlete_data[["event","time"]])
         individual_data = athlete_data[["event","time"]].transpose()
         individual_data.columns = individual_data.iloc[0]
         individual_data.drop("event", inplace=True)
@@ -120,12 +122,12 @@ def demo_code():
     swims, swimmers, teams, event_list = get_data()
     team_data = get_athlete_data(swims, swimmers, teams, event_list)
     pred_perf = get_athlete_predicted_performance(team_data, 'average_time')
-    meet_id = random.choice(list(swims['meet_id'].unique()))
-    some_lineup = get_team_lineup(swims, swimmers, teams, event_list, meet_id)
+    #meet_id = random.choice(list(swims['meet_id'].unique()))
+    #some_lineup = get_team_lineup(swims, swimmers, teams, event_list, meet_id)
     print("\n predicted performance of players (based on average time)\n")
     print(pd.DataFrame(pred_perf).transpose())
-    print("\n lineup used during meet {0} (meet names will be incorporated later, for now here is the url that will lead to that event: https://www.collegeswimming.com/results/{0}/\n".format(meet_id))
-    print(pd.DataFrame(some_lineup).transpose())
+    #print("\n lineup used during meet {0} (meet names will be incorporated later, for now here is the url that will lead to that event: https://www.collegeswimming.com/results/{0}/\n".format(meet_id))
+    #print(pd.DataFrame(some_lineup).transpose())
 
 
 # NOTE: I can probably get team lineups straight from collegeswim rather than needing to construct it from the data

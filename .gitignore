@@ -5,5 +5,5 @@ graphs/*
 *.history
 *.pyc
 .idea
-gurobi.log
+*.log
 

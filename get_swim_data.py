@@ -236,11 +236,6 @@ def get_swim_data(teams_to_pull, genders_to_pull,
     connection.commit()
     connection.close()
 
-# NOTE: Not sure how to credit this now.
-# print ("Check {} for results".format(databaseFileName))
-# print ("Written by Kevin Wylder")
-# print ("contact at wylderkevin@gmail.com")
-
 
 # The function below will be removed and replaced with a better version somewhere else
 def inputs_for_swim_data_search(all_default = False):
