@@ -22,22 +22,31 @@ def convert_to_time(year, month, day):
 
 def to_title(event_string):
     """
-    Input string event_string
-    Output human readable event title
+    Use when displaying results (not during data collection)
+    :param event_string: String abbreviation of an event name.
+    :return: Full human-readable event name
     """
-    gender = event_string[0]
-    stroke = event_string[1]
-    distance = event_string[2:-1]
     gender_map = {"M": "Men", "F": "Women", "X": "Mixed"}
     stroke_map = {"1": "Freestyle", "2": "Backstroke", "3": "Breaststroke", "4": "Butterfly", "5": "IM",
-                  "M": "Medley Relay", "F": "Freestyle Relay"}
-    return "{}'s {} Yard {}".format(gender_map[gender], distance, stroke_map[stroke])
+                  "M": "Medley Relay: ", "F": "Free Relay: "}
+
+    gender = event_string[0]
+    stroke = event_string[1]
+    if event_string[2] in "MF":
+        relay_tag = stroke_map[event_string[2]]
+        distance = event_string[3:-1]
+    else:
+        relay_tag = ""
+        distance = event_string[2:-1]
+
+    return "{}'s {} Yard {}".format(gender_map[gender], distance, relay_tag + stroke_map[stroke])
 
 
 def to_event_title(event_string):
     """
-    Input string event_string
-    Output human readable event title
+    This can be used during data collection. Converts abbreviated event name to format used on collegeswimming.com
+    :param event_string: String abbreviation of an event name.
+    :return: Full human-readable event name from collegeswimming
     """
     gender = event_string[0]
     stroke = event_string[1]

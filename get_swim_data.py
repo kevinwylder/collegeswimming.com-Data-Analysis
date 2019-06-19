@@ -17,19 +17,6 @@ from bs4 import BeautifulSoup
 #                                                                                        #
 # From here on out, 90 character width isn't guarenteed                                  #
  # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# URL's for pulling data from
-SWIMMER_URL = "https://www.collegeswimming.com/swimmer/{}"
-SWIMMER_EVENT_URL = "https://www.collegeswimming.com/swimmer/{}/times/byeventid/{}"
-ROSTER_URL = "https://www.collegeswimming.com/team/{}/roster?season={}&gender={}"
-
-# Missing data in createXYZTable is filled in by data put into insertXYZCommand using .format()
-CREATE_SWIMS_TABLE = "CREATE TABLE IF NOT EXISTS Swims (swimmer INTEGER, team INTEGER, time REAL, scaled REAL, meet_id INTEGER, event TEXT, date INTEGER, taper INTEGER, snapshot INTEGER);"
-INSERT_SWIM_COMMAND = "INSERT INTO Swims VALUES({}, {}, {}, {}, {}, '{}{}', {}, {}, {});"
-CREATE_SNAPSHOT_TABLE_COMMAND = "CREATE TABLE IF NOT EXISTS Snapshots (snapshot INTEGER, date TEXT, teams TEXT, events TEXT);"
-INSERT_SNAPSHOT_COMMAND = "INSERT INTO Snapshots VALUES({}, '{}', '{}', '{}');"
-CREATE_NAME_TABLE = "CREATE TABLE IF NOT EXISTS {} (name TEXT, id INTEGER);"
-CHECK_NAME_TABLE = 'SELECT id FROM {} WHERE id={} LIMIT 1;'
-ADD_TO_NAME_TABLE = "INSERT INTO {} VALUES('{}', {});"
 
 
 def request_swimmer(swimmer_id, event, search_start_timestamp, search_end_timestamp):
@@ -228,17 +215,17 @@ def get_relay_swim_data(team_to_pull, gender_to_pull, season_to_pull, relays_to_
     [swimmer_id, team_id, time, 0, meet_id, gender, event_code, date, 0, snapshot_id]
     """
     def medley():
-        medley_leg_dict = {1: "BS", 2: "BR", 3: "BF"}
+        medley_leg_dict = {1: "2M", 2: "3M", 3: "4M"}
         for i in range(len(relay_results)):
             if i%4 is not 0:
-                medley_leg_name = str(int(relay_string[1:-1])//4) + medley_leg_dict[i%4] + "_R"
+                medley_leg_name = medley_leg_dict[i%4] + str(int(relay_string[1:-1])//4)
                 relay_swims.append([relay_results[i][0], team_to_pull, relay_results[i][1], 0, meet_id, relay_string[0],
                                    medley_leg_name, meets[meet_id]["meet_date"]])
 
     def freestyle():
         for i in range(len(relay_results)):
             if i % 4 != 0:
-                freestyle_leg_name = str(int(relay_string[1:-1])//4) + "F_R"
+                freestyle_leg_name = "1F" + str(int(relay_string[1:-1])//4)
                 relay_swims.append([relay_results[i][0], team_to_pull, relay_results[i][1], 0, meet_id, relay_string[0],
                                    freestyle_leg_name, meets[meet_id]["meet_date"]])
 
@@ -291,8 +278,8 @@ def get_swim_data(teams_to_pull, genders_to_pull,
 
     # ensure the existence of each event table and the Teams/Swimmers tables
     cursor.execute(CREATE_SWIMS_TABLE)
-    cursor.execute(CREATE_NAME_TABLE.format("Swimmers"))
-    cursor.execute(CREATE_NAME_TABLE.format("Teams"))
+    cursor.execute(CREATE_SWIMMER_TABLE.format("Swimmers"))
+    cursor.execute(CREATE_TEAM_TABLE.format("Teams"))
     
     # retrieve and add the times to the database
     for simple_year in range(year_start, year_end):   # for each competition year
@@ -309,18 +296,18 @@ def get_swim_data(teams_to_pull, genders_to_pull,
                 print (team)
                 # add team to the Teams table
                 if not team["name"] is "":  # if there wasn't a 404 error
-                    matches = cursor.execute(CHECK_NAME_TABLE.format("Teams", team_id))
+                    matches = cursor.execute(CHECK_TEAM_TABLE.format("Teams", team_id))
                     if matches.fetchone() is None:  # if there are no duplicates
-                        cursor.execute(ADD_TO_NAME_TABLE.format("Teams", team["name"], team_id))
+                        cursor.execute(ADD_TO_TEAM_TABLE.format("Teams", team["name"], team_id))
                 for index, swimmer in enumerate(team["roster"]):
                     print (swimmer[0] + " " + swimmer[1])  # for each swimmer on the team
                     # enumerate this loop to have an index for the loading bar
                     percent_of_team = float(index) / float(len(team["roster"]))
                     show_loading_bar(percent + (percent_of_team / float(len(teams_to_pull))))
                     # add the swimmer to the Names table
-                    matches = cursor.execute(CHECK_NAME_TABLE.format("Swimmers", swimmer[1]))
+                    matches = cursor.execute(CHECK_SWIMMER_TABLE.format("Swimmers", swimmer[1]))
                     if matches.fetchone() is None:
-                        cursor.execute(ADD_TO_NAME_TABLE.format("Swimmers", sqlsafe(swimmer[0]), swimmer[1]))
+                        cursor.execute(ADD_TO_SWIMMER_TABLE.format("Swimmers", sqlsafe(swimmer[0]), swimmer[1], team_id))
                     for event in events_to_pull:   # for each of this swimmer's event we're searching
                         print (swimmer[1] + " " + event)
                         swims = request_swimmer(swimmer[1], event, search_start_timestamp, search_end_timestamp)
