@@ -28,9 +28,24 @@ def to_title(event_string):
     gender = event_string[0]
     stroke = event_string[1]
     distance = event_string[2:-1]
-    gender_map = {"M": "Men", "F": "Women"}
-    stroke_map = {"1": "Freestyle", "2": "Backstroke", "3": "Breaststroke", "4": "Butterfly", "5": "IM"}
+    gender_map = {"M": "Men", "F": "Women", "X": "Mixed"}
+    stroke_map = {"1": "Freestyle", "2": "Backstroke", "3": "Breaststroke", "4": "Butterfly", "5": "IM",
+                  "M": "Medley Relay", "F": "Freestyle Relay"}
     return "{}'s {} Yard {}".format(gender_map[gender], distance, stroke_map[stroke])
+
+
+def to_event_title(event_string):
+    """
+    Input string event_string
+    Output human readable event title
+    """
+    gender = event_string[0]
+    stroke = event_string[1]
+    distance = event_string[2:-1]
+    gender_map = {"M": "Men", "F": "Women", "X": "Mixed"}
+    stroke_map = {"1": "Freestyle", "2": "Backstroke", "3": "Breaststroke", "4": "Butterfly", "5": "IM",
+                  "M": "Medley Relay", "F": "Free Relay"}
+    return "{} {} {} ".format(distance, stroke_map[stroke], gender_map[gender])
 
 
 def normalize_name(name):
