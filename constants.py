@@ -44,15 +44,3 @@ DEFAULT_TEAMS_TO_PULL = ["Bucknell University"]
 DEFAULT_YEAR_START = 2018
 DEFAULT_YEAR_END = 2019
 
-##########################################################
-# Constants for analysis.py                              #
-##########################################################
-
-# Analysis Parameters (I haven't seen this part of the code yet so I don't really know what this is for
-EVENT_HISTOGRAMS = ["M1100Y"]  # should be an input you can change
-TEAMS_TO_REVIEW = [184]  # should be an input you can change
-SWIMMERS_TO_REVIEW = [325120]  # should be an input you can change
-REVIEW_YEAR_START = 2017  # should be an input you can change
-REVIEW_YEAR_END = 2018  # should be an input you can change
-
-

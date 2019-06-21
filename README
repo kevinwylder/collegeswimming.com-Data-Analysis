@@ -135,3 +135,7 @@ collegeswimming.com url structure
     The curly braces "{}" are omitted and replaced with
     A: The swimmer's id number. This should be retreived from the team roster
     B: the event structure. This is defined above as "collegeswimming.com event structure"
+
+
+A Note to you (fellow developer) from Brad:
+All of the R/analysis files were deleted on June 21st, 2019. If something goes wrong you can find them in any of the branches that predate brad-task-014
