@@ -28,7 +28,7 @@ def to_title(event_string):
     """
     gender_map = {"M": "Men", "F": "Women", "X": "Mixed"}
     stroke_map = {"1": "Freestyle", "2": "Backstroke", "3": "Breaststroke", "4": "Butterfly", "5": "IM",
-                  "M": "Medley Relay: ", "F": "Free Relay: "}
+                  "M": "Medley Relay: ", "F": "Free Relay: ", "L": "Leadoff"}
 
     gender = event_string[0]
     stroke = event_string[1]

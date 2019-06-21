@@ -109,6 +109,8 @@ def get_team_results(team_id, season):
         meet_name = meet.find("h3").text
         meet_submitted = "Completed" in meet.find("ul",
                                                   class_="c-list-grid__meta o-list-inline o-list-inline--dotted").text
+        print("If no data is being collected from meets for relays, it may be because the \"Completed\" "
+              "tag is no longer in use")
         meet_date = meet.find("time")["datetime"]
 
         meets[meet_id] = {"meet_name": meet_name, "meet_date": meet_date, "submitted": meet_submitted}
@@ -214,20 +216,24 @@ def get_relay_swim_data(team_to_pull, gender_to_pull, season_to_pull, relays_to_
     :return: relay_swims: 2D list where rows are individual swims and columns are in following format:
     [swimmer_id, team_id, time, 0, meet_id, gender, event_code, date, 0, snapshot_id]
     """
+    team_letter = {0: "A", 1: "B", 2: "C", 3: "D", 4: "E", 5: "F"}
+
     def medley():
-        medley_leg_dict = {1: "2M", 2: "3M", 3: "4M"}
+        medley_leg_dict = {0: "LM", 1: "2M", 2: "3M", 3: "4M"}
         for i in range(len(relay_results)):
-            if i%4 is not 0:
-                medley_leg_name = medley_leg_dict[i%4] + str(int(relay_string[1:-1])//4)
-                relay_swims.append([relay_results[i][0], team_to_pull, relay_results[i][1], 0, meet_id, relay_string[0],
-                                   medley_leg_name, meets[meet_id]["meet_date"]])
+            medley_leg_name = medley_leg_dict[i%4] + str(int(relay_string[1:-1])//4) + team_letter[i//4]  #NOTE below
+            relay_swims.append([relay_results[i][0], team_to_pull, relay_results[i][1], 0, meet_id, relay_string[0],
+                                medley_leg_name, meets[meet_id]["meet_date"]])
 
     def freestyle():
         for i in range(len(relay_results)):
             if i % 4 != 0:
-                freestyle_leg_name = "1F" + str(int(relay_string[1:-1])//4)
-                relay_swims.append([relay_results[i][0], team_to_pull, relay_results[i][1], 0, meet_id, relay_string[0],
-                                   freestyle_leg_name, meets[meet_id]["meet_date"]])
+                freestyle_leg_name = "1F" + str(int(relay_string[1:-1])//4) + team_letter[i//4]  #NOTE: This assumes teams place exactly as planned
+            else:
+                freestyle_leg_name = "LF" + str(int(relay_string[1:-1])//4) + team_letter[i//4]
+
+            relay_swims.append([relay_results[i][0], team_to_pull, relay_results[i][1], 0, meet_id, relay_string[0],
+                                freestyle_leg_name, meets[meet_id]["meet_date"]])
 
     relay_swims = []
     meets = get_team_results(team_to_pull, season_to_pull)  # can have this work the same way that get_swim_data does later if that helps

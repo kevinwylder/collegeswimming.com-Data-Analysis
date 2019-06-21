@@ -131,6 +131,4 @@ def demo_code():
     print(pd.DataFrame(some_lineup).transpose())
 
 
-# NOTE: I can probably get team lineups straight from collegeswim rather than needing to construct it from the data
-#  see here: https://www.collegeswimming.com/results/119950/team/184/
 demo_code()
