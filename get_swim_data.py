@@ -222,7 +222,7 @@ def get_relay_swim_data(team_to_pull, gender_to_pull, season_to_pull, relays_to_
         medley_leg_dict = {0: "LM", 1: "2M", 2: "3M", 3: "4M"}
         for i in range(len(relay_results)):
             medley_leg_name = medley_leg_dict[i%4] + str(int(relay_string[1:-1])//4) + team_letter[i//4]  #NOTE below
-            relay_swims.append([relay_results[i][0], team_to_pull, relay_results[i][1], 0, meet_id, relay_string[0],
+            relay_swims.append([relay_results[i][0], team_to_pull, relay_results[i][1], 0, meet_id, gender_to_pull,
                                 medley_leg_name, meets[meet_id]["meet_date"]])
 
     def freestyle():
@@ -232,7 +232,7 @@ def get_relay_swim_data(team_to_pull, gender_to_pull, season_to_pull, relays_to_
             else:
                 freestyle_leg_name = "LF" + str(int(relay_string[1:-1])//4) + team_letter[i//4]
 
-            relay_swims.append([relay_results[i][0], team_to_pull, relay_results[i][1], 0, meet_id, relay_string[0],
+            relay_swims.append([relay_results[i][0], team_to_pull, relay_results[i][1], 0, meet_id, gender_to_pull,
                                 freestyle_leg_name, meets[meet_id]["meet_date"]])
 
     relay_swims = []

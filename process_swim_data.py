@@ -32,18 +32,17 @@ def get_athlete_data(swims, swimmers, teams, event_list):
     grouped_dataset = full_dataset.groupby(["swimmer", "event"])
     team_data = []
     swimmer_event_pairs_used = grouped_dataset.groups.keys()
-    for swimmer in swimmers["swimmer_id"]:
+    swimmers.set_index("swimmer_id", inplace=True)
+    teams.set_index("team_id", inplace=True)
+    for swimmer, swimmer_data in swimmers.iterrows():
+        athlete_name = swimmer_data["athlete_name"]
+        team = teams.loc[swimmer_data["team_id"]]["team_name"]
         for event in event_list:
-            athlete_name = swimmers[swimmers['swimmer_id'] == swimmer]["athlete_name"].tolist()[0]  # TODO: find better way
             if (swimmer, event) not in swimmer_event_pairs_used:
-                team = full_dataset[full_dataset["swimmer"] == swimmer]["team_name"].unique().tolist()
-                # TODO: there has to be a better way to do this ^^
                 team_data.append({"athlete_name": athlete_name, "event": event, "team": team, "minimum_time": None,
                                   "average_time": None, "median_time": None})
             else:
                 individual_event_data = grouped_dataset.get_group((swimmer, event))
-                team = individual_event_data[individual_event_data["swimmer"] == swimmer]["team_name"].unique().tolist()
-                # TODO: there has to be a better way to do this ^^
                 minimum_time = individual_event_data["time"].min()
                 average_time = individual_event_data["time"].mean()
                 median_time = individual_event_data["time"].median()
@@ -101,29 +100,28 @@ def get_team_lineup(swims, swimmers, teams, event_list, meet_id):
 
     meet_lineup = {}
     # makes a nested dictionary containing all athletes and events. all values in event dicts are False (0)
-    for athlete in swimmers['swimmer_id']:
-        athlete_name = swimmers[swimmers['swimmer_id'] == athlete]["athlete_name"].tolist()[0]  # TODO: find better way
+    for swimmer, swimmer_data in swimmers.iterrows():
+        athlete_name = swimmer_data["athlete_name"]
         meet_lineup[athlete_name] = event_dict.copy()
 
     # updates the dictionary made above so that events an athlete participated in are True (1)
-    for athlete, athlete_data in group_by_individual:
-        athlete_name = swimmers[swimmers['swimmer_id'] == athlete]["athlete_name"].tolist()[0]  # TODO: find better way
-        print(athlete_data[["event","time"]])
-        individual_data = athlete_data[["event","time"]].transpose()
+    for swimmer, swimmer_data in group_by_individual:
+        athlete_name = swimmers.loc[swimmer]["athlete_name"]
+        print(swimmer_data[["event","time"]])
+        individual_data = swimmer_data[["event","time"]].transpose()
         individual_data.columns = individual_data.iloc[0]
         individual_data.drop("event", inplace=True)
         meet_lineup[athlete_name].update(individual_data.to_dict('records')[0])
     return meet_lineup
 
 
-import random
 
 def demo_code():
     bucknell_vs_lehigh = 119957
     swims, swimmers, teams, event_list = get_data()
     team_data = get_athlete_data(swims, swimmers, teams, event_list)
     pred_perf = get_athlete_predicted_performance(team_data, 'average_time')
-    some_lineup = get_team_lineup(swims, swimmers, teams, event_list[10:], bucknell_vs_lehigh)
+    some_lineup = get_team_lineup(swims, swimmers, teams, event_list, bucknell_vs_lehigh)
     print("\n predicted performance of players (based on average time)\n")
     print(pd.DataFrame(pred_perf).transpose())
     print("\n lineup used during meet {0} (meet names will be incorporated later, for now here is the url that will "
