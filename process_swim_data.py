@@ -116,124 +116,6 @@ def get_team_lineup(swims, swimmers, teams, event_list, meet_id):
     return meet_lineup
 
 
-def calculate_pred_score(perfA, lineA, perfB, lineB):
-    """
-    returns the predicted score of team A for a swimming meet
-    :param perfA: Pandas dataframe of predicted performances for a given team A's swimmers
-    :param lineA: Pandas Dataframe of a given lineup for a team A
-    :param perfB: Pandas dataframe of predicted performances for a given team B's swimmers
-    :param lineB: Pandas Dataframe of a given lineup for a team B
-    :return: pred_score: Integer value of team A's predicted
-    """
-    # This is a predicted performance matrix that only contains values for swimmers in the lineup
-    lineup_scoresA = perfA[lineA==1]
-    lineup_scoresB = perfB[lineB==1]
-    # Dictionaries for storing relay times
-    medley_total_times_A = {}
-    medley_total_times_B = {}
-    free_total_times_A = {}
-    free_total_times_B = {}
-    # Team scores are integer values
-    score_A = 0
-    score_B = 0
-    # This assumes that team A and B both have their event columns in the same order
-    for column_name in lineup_scoresA:
-        column_vals_A = lineup_scoresA[column_name][lineup_scoresA[column_name].notna()].tolist()
-        column_vals_B = lineup_scoresA[column_name][lineup_scoresB[column_name].notna()].tolist()
-        if column_name[2] in "M":  # Relay race
-            # column_name[2] is medley vs free, column_name[-1] is team A,B,C,etc
-            if (column_name[2]+column_name[-1]) not in medley_total_times_A:
-                medley_total_times_A[column_name[2] + column_name[-1]] = sum(column_vals_A)
-                medley_total_times_B[column_name[2] + column_name[-1]] = sum(column_vals_B)
-            else:
-                medley_total_times_A[column_name[2]+column_name[-1]] += sum(column_vals_A)
-                medley_total_times_B[column_name[2]+column_name[-1]] += sum(column_vals_B)
-        elif column_name[2] in "F":  # Relay race
-            # column_name[2] is medley vs free, column_name[-1] is team A,B,C,etc
-            if (column_name[2]+column_name[-1]) not in free_total_times_A:
-                free_total_times_A[column_name[2] + column_name[-1]] = sum(column_vals_A)
-                free_total_times_B[column_name[2] + column_name[-1]] = sum(column_vals_B)
-            else:
-                free_total_times_A[column_name[2]+column_name[-1]] += sum(column_vals_A)
-                free_total_times_B[column_name[2]+column_name[-1]] += sum(column_vals_B)
-        else:  # Individual race
-            for place in INDIVIDUAL_POINTS:
-                if len(column_vals_A) > 0 and len(column_vals_B) > 0:
-                    if min(column_vals_A) < min(column_vals_B):
-                        column_vals_A.remove(min(column_vals_A))
-                        score_A += place
-                        print("awarded {} points to team A for event {}".format(place, column_name))
-                    else:
-                        column_vals_B.remove(min(column_vals_B))
-                        score_B += place
-                        print("awarded {} points to team B for event {}".format(place, column_name))
-                elif len(column_vals_A) > 0:
-                    column_vals_A.pop()
-                    score_A += place
-                elif len(column_vals_B) > 0:
-                    column_vals_B.pop()
-                    score_B += place
-                else:
-                    continue
-        # Add in scores for relays
-        scores_medley_A = list(medley_total_times_A.values())
-        scores_medley_B = list(medley_total_times_B.values())
-        for val in range(len(scores_medley_A)):
-            if scores_medley_A[val] == 0:
-                scores_medley_A[val] = 9001
-            if scores_medley_B[val] == 0:
-                scores_medley_B[val] = 9001
-        for place in RELAY_POINTS:
-            if len(scores_medley_A) > 0 and len(scores_medley_B) > 0:
-                if min(scores_medley_A) < min(scores_medley_B):
-                    scores_medley_A.remove(min(scores_medley_A))
-                    score_A += place
-                    print("awarded {} points to team A for medley".format(place))
-                else:
-                    scores_medley_B.remove(min(scores_medley_B))
-                    score_B += place
-                    print("awarded {} points to team B for medley".format(place))
-            elif len(scores_medley_A) > 0:
-                scores_medley_A.pop()
-                score_A += place
-            elif len(scores_medley_B) > 0:
-                scores_medley_B.pop()
-                score_B += place
-            else:
-                continue
-        scores_free_A = list(free_total_times_A.values())
-        scores_free_B = list(free_total_times_B.values())
-        for val in range(len(scores_free_A)):
-            if scores_free_A[val] == 0:
-                scores_free_A[val] = 9001
-            if scores_free_B[val] == 0:
-                scores_free_B[val] = 9001
-        for place in RELAY_POINTS:
-            if len(scores_free_A) > 0 and len(scores_free_B) > 0:
-                if min(scores_free_A) < min(scores_free_B):
-                    scores_free_A.remove(min(scores_free_A))
-                    score_A += place
-                    print("awarded {} points to team A for free".format(place))
-
-                else:
-                    scores_free_B.remove(min(scores_free_B))
-                    score_B += place
-                    print("awarded {} points to team A for free".format(place))
-
-            elif len(scores_free_A) > 0:
-                scores_free_A.pop()
-                score_A += place
-            elif len(scores_free_B) > 0:
-                scores_free_B.pop()
-                score_B += place
-            else:
-                continue
-    print(score_A)
-    print(score_B)
-    print(lineup_scoresA.columns)
-    return score_A, score_B
-
-
 def score_event(results_a, results_b, places):
     """
     assigns points to groups based on who has the smallest score/time.
@@ -262,7 +144,7 @@ def score_event(results_a, results_b, places):
     return score_a, score_b
 
 
-def calculate_pred_score_try(perfA, lineA, perfB, lineB):
+def calculate_pred_score(perfA, lineA, perfB, lineB):
     """
     returns the predicted score of team A for a swimming meet
     :param perfA: Pandas dataframe of predicted performances for a given team A's swimmers
@@ -317,8 +199,7 @@ def calculate_pred_score_try(perfA, lineA, perfB, lineB):
         tempa, tempb = score_event(column_vals_a, column_vals_b, INDIVIDUAL_POINTS)
         score_a += tempa
         score_b += tempb
-    print(score_a)
-    print(score_b)
+    return score_a, score_b
 
 def demo_code():
     bucknell_vs_lehigh = 119957
@@ -338,7 +219,6 @@ def demo_code():
     pred_perfB = pd.DataFrame.from_dict(pred_perfB, orient='index')
     some_lineupB = pd.DataFrame.from_dict(some_lineupB, orient='index')
     calculate_pred_score(pred_perfA, some_lineupA, pred_perfB, some_lineupB)
-    calculate_pred_score_try(pred_perfA, some_lineupA, pred_perfB, some_lineupB)
 
 
 demo_code()
