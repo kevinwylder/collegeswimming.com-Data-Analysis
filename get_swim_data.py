@@ -111,7 +111,8 @@ def get_team_results(team_id, season):
                                                   class_="c-list-grid__meta o-list-inline o-list-inline--dotted").text
         print("If no data is being collected from meets for relays, it may be because the \"Completed\" "
               "tag is no longer in use")
-        meet_date = meet.find("time")["datetime"]
+        split_date = meet.find("time")["datetime"].split("-")
+        meet_date = convert_to_time(int(split_date[0]), int(split_date[1]), int(split_date[2]))
 
         meets[meet_id] = {"meet_name": meet_name, "meet_date": meet_date, "submitted": meet_submitted}
     print(meets)
@@ -313,7 +314,7 @@ def get_swim_data(teams_to_pull, genders_to_pull,
                     # add the swimmer to the Names table
                     matches = cursor.execute(CHECK_SWIMMER_TABLE.format("Swimmers", swimmer[1]))
                     if matches.fetchone() is None:
-                        cursor.execute(ADD_TO_SWIMMER_TABLE.format("Swimmers", sqlsafe(swimmer[0]), swimmer[1], team_id))
+                        cursor.execute(ADD_TO_SWIMMER_TABLE.format("Swimmers", sqlsafe(swimmer[0]), gender, swimmer[1], team_id))
                     for event in events_to_pull:   # for each of this swimmer's event we're searching
                         print (swimmer[1] + " " + event)
                         swims = request_swimmer(swimmer[1], event, search_start_timestamp, search_end_timestamp)

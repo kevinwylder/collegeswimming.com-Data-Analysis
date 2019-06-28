@@ -2,6 +2,7 @@ import pandas as pd
 import sqlite3
 from constants import *
 import re
+import helperfunctions as hf
 # This file is for processing the data
 
 
@@ -13,11 +14,11 @@ def get_data():
     swims = pd.read_sql_query("SELECT * FROM Swims", connection)
     swimmers = pd.read_sql_query("SELECT * FROM Swimmers", connection).rename({"name": "athlete_name"}, axis="columns")
     teams = pd.read_sql_query("SELECT * FROM Teams", connection).rename({"name": "team_name"}, axis="columns")
+    swimmers.set_index("swimmer_id", inplace=True)
+    teams.set_index("team_id", inplace=True)
     connection.close()
 
     event_list = list(swims["event"].unique())  # TODO: this should come from user input in the future
-    full_dataset = swims.join(swimmers.set_index('swimmer_id'), on='swimmer').join(teams.set_index('team_id'), on='team')
-    grouped_dataset = full_dataset.groupby("swimmer")
     # TODO: use this instead of swims as return value when you feel ready ^^
     return swims, swimmers, teams, event_list
 
@@ -29,30 +30,80 @@ def get_athlete_data(swims, swimmers, teams, event_list):
     :param event_list: list of events included in the dataset
     :return: team_data, a dataframe of all swimmers, as well as different measures of their performance
     """
-    full_dataset = swims.join(swimmers.set_index('swimmer_id'), on='swimmer').join(teams.set_index('team_id'), on='team')
-    grouped_dataset = full_dataset.groupby(["swimmer", "event"])
+    grouped_dataset = swims.groupby(["swimmer", "event"])
     team_data = []
     swimmer_event_pairs_used = grouped_dataset.groups.keys()
-    swimmers.set_index("swimmer_id", inplace=True)
-    teams.set_index("team_id", inplace=True)
+
     for swimmer, swimmer_data in swimmers.iterrows():
-        athlete_name = swimmer_data["athlete_name"]
         team = teams.loc[swimmer_data["team_id"]]["team_name"]
         for event in event_list:
             if (swimmer, event) not in swimmer_event_pairs_used:
-                team_data.append({"athlete_name": athlete_name, "event": event, "team": team, "minimum_time": None,
+                team_data.append({"swimmer_id": swimmer, "event": event, "team": team, "minimum_time": None,
                                   "average_time": None, "median_time": None})
             else:
                 individual_event_data = grouped_dataset.get_group((swimmer, event))
                 minimum_time = individual_event_data["time"].min()
                 average_time = individual_event_data["time"].mean()
                 median_time = individual_event_data["time"].median()
-                team_data.append({"athlete_name": athlete_name, "event": event, "team": team,
+                team_data.append({"swimmer_id": swimmer, "event": event, "team": team,
                                   "minimum_time": minimum_time, "average_time": average_time, "median_time": median_time})
 
-    team_data = pd.DataFrame(team_data, columns=["athlete_name", "event", "team", "minimum_time", "average_time", "median_time"])
+    team_data = pd.DataFrame(team_data, columns=["swimmer_id", "event", "team", "minimum_time", "average_time", "median_time"])
     # This will have every possible athlete-event pairing possible, even if an athlete hasn't done that event before
     return team_data
+
+
+def filter_from_dataset(swims, swimmers, team=None, gender=None, start_year=None, end_year=None):  # Not in use
+    """
+    function for filtering raw data
+    :param swims: the database of swims from which we begin to whittle down the group data
+    :param team: an integer team id for the team whose data you may want to collect
+    :param gender: character M or F representing gender whose swims you want to collect
+    :param start_year: all data on the group must be after this year (a default month and start day are used)
+    :param end_year: all data on the group must be before this year (a default month and start day are used)
+    :return: filtered_data: dataset containing only data that you want
+    """
+    #NOTE: this might not be what is wanted, spend some time figuring out what is wrong with it, then make sure it is
+    # what you are being asked for. If it can't separate the other parts then it is useless.
+    filtered_data = swims.copy()
+    if team:
+        filtered_data = filtered_data[filtered_data["team"]==team]
+    if gender:
+        gender_swimmers = []
+        for swimmer in swimmers.iterrows():
+            if swimmer[1]["gender"] in gender:  # not sure why the 1 is needed but it works now
+                gender_swimmers.append(swimmer[0])
+        filtered_data = filtered_data[filtered_data["swimmer"].isin(gender_swimmers)]
+    if start_year:
+        start_timestamp = hf.convert_to_time(int(start_year), SEASON_LINE_MONTH, SEASON_LINE_DAY)
+        filtered_data = filtered_data[filtered_data["date"] >= start_timestamp]
+    if end_year:
+        end_timestamp = hf.convert_to_time(int(end_year), SEASON_LINE_MONTH, SEASON_LINE_DAY)
+        filtered_data = filtered_data[filtered_data["date"] <= end_timestamp]
+    return filtered_data
+
+
+def get_team_swims(swims, team):  # Not in use
+    """
+    :param swims: dataframe of raw swim data, including the team a swimmer who performed a swim was on
+    :param team: integer corresponding to the team we want to keep swims for
+    :return: team_swims: a table/pandas dataframe of swims performed by a given team
+    """
+    team_swims = swims[swims["team_id"] == team]
+    return team_swims
+
+
+def filter_by_team(id_matrix, swimmers, team):  # I should use a more descriptive name than id_matrix if possible
+    """
+    Filters a table based on the team that its players come from. the table must be indexed by player ID
+    :param id_matrix: a pandas table indexed by swimmer ID
+    :param swimmers: a pandas table of all swimmers in the database
+    :param team: the team you wish to filter by
+    :return: filtered_table: a table that only contains data on swimmers from the target team
+    """
+    filtered_swimmers = swimmers[swimmers["team_id"] == team]
+    filtered_table = id_matrix[id_matrix.index.isin(filtered_swimmers.index.tolist())]
+    return filtered_table
 
 
 def get_predicted_performance_matrix(team_data, preference):
@@ -68,7 +119,7 @@ def get_predicted_performance_matrix(team_data, preference):
     # NOTE: It also might be a good idea to use athlete ID instead of name somewhere in case two team members have the
     #  same name, but that is a problem for another time
 
-    group_by_individual = team_data.groupby("athlete_name")  # should uniquely identify every player
+    group_by_individual = team_data.groupby("swimmer_id")  # should uniquely identify every player
 
     athlete_prediction_dictionary = {}
     for athlete, athlete_data in group_by_individual:
@@ -76,7 +127,7 @@ def get_predicted_performance_matrix(team_data, preference):
         individual_data.columns = individual_data.iloc[0]
         individual_data.drop("event", inplace=True)
         athlete_prediction_dictionary[athlete] = individual_data.to_dict('records')[0]
-    return athlete_prediction_dictionary
+    return pd.DataFrame.from_dict(athlete_prediction_dictionary, orient='index')
 
 
 def get_team_lineup(swims, swimmers, teams, event_list, meet_id):
@@ -86,7 +137,7 @@ def get_team_lineup(swims, swimmers, teams, event_list, meet_id):
     :param event_list: the list of events that are included in the dataset
     :param meet_id: this is a numerical ID
     :return: meet_lineup, the lineup used by one team at a single meet. this is a dictionary with the format
-    {athlete_name: {"event1": (1 or 0), "event2": (1 or 0),...}} with 1 showing that an athlete participated in an event
+    {swimmer_id: {"event1": (1 or 0), "event2": (1 or 0),...}} with 1 showing that an athlete participated in an event
     and 0 indicating that they did not
 
     The purpose of this function is to find a previous lineup used by a given team.
@@ -102,18 +153,16 @@ def get_team_lineup(swims, swimmers, teams, event_list, meet_id):
     meet_lineup = {}
     # makes a nested dictionary containing all athletes and events. all values in event dicts are False (0)
     for swimmer, swimmer_data in swimmers.iterrows():
-        athlete_name = swimmer_data["athlete_name"]
-        meet_lineup[athlete_name] = event_dict.copy()
+        meet_lineup[swimmer] = event_dict.copy()
 
     # updates the dictionary made above so that events an athlete participated in are True (1)
     for swimmer, swimmer_data in group_by_individual:
-        athlete_name = swimmers.loc[swimmer]["athlete_name"]
         print(swimmer_data[["event","time"]])
         individual_data = swimmer_data[["event","time"]].transpose()
         individual_data.columns = individual_data.iloc[0]
         individual_data.drop("event", inplace=True)
-        meet_lineup[athlete_name].update(individual_data.to_dict('records')[0])
-    return meet_lineup
+        meet_lineup[swimmer].update(individual_data.to_dict('records')[0])
+    return pd.DataFrame.from_dict(meet_lineup, orient='index')
 
 
 def score_event(results_a, results_b, places):
@@ -188,37 +237,38 @@ def calculate_pred_score(perfA, lineA, perfB, lineB):
         # get results for each team by event
         results_a = relay_event_results[event][0]
         results_b = relay_event_results[event][1]
-        tempa, tempb = score_event(results_a, results_b, RELAY_POINTS)
-        score_a += tempa
-        score_b += tempb
+        temp_a, temp_b = score_event(results_a, results_b, RELAY_POINTS)
+        score_a += temp_a
+        score_b += temp_b
     # score individual events
     individual_events = list(filter(lambda x: x[2] not in "MF", event_list))
     for column_name in individual_events:
-        column_vals_a = lineup_scores_a[column_name][lineup_scores_a[column_name].notna()].tolist()
-        column_vals_b = lineup_scores_a[column_name][lineup_scores_b[column_name].notna()].tolist()
-        tempa, tempb = score_event(column_vals_a, column_vals_b, INDIVIDUAL_POINTS)
-        score_a += tempa
-        score_b += tempb
+        results_a = lineup_scores_a[column_name][lineup_scores_a[column_name].notna()].tolist()
+        results_b = lineup_scores_b[column_name][lineup_scores_b[column_name].notna()].tolist()
+        temp_a, temp_b = score_event(results_a, results_b, INDIVIDUAL_POINTS)
+        score_a += temp_a  # cannot add to two values at same time
+        score_b += temp_b
     return score_a, score_b
+
 
 def demo_code():
     bucknell_vs_lehigh = 119957
     swims, swimmers, teams, event_list = get_data()
+    #swims = swims[swims["meet_id"] == bucknell_vs_lehigh]  # check to see that everything works for single meet
     team_data = get_athlete_data(swims, swimmers, teams, event_list)
-    pred_perfA = get_predicted_performance_matrix(team_data, 'minimum_time')
-    some_lineupA = get_team_lineup(swims, swimmers, teams, event_list, bucknell_vs_lehigh)
-    pred_perfB = get_predicted_performance_matrix(team_data, 'average_time')
-    some_lineupB = get_team_lineup(swims, swimmers, teams, event_list, 104421)
+    pred_perf = get_predicted_performance_matrix(team_data, 'average_time')
+    some_lineup = get_team_lineup(swims, swimmers, teams, event_list, bucknell_vs_lehigh)
+    bucknell_perf = filter_by_team(pred_perf, swimmers, 184)
+    bucknell_lineup = filter_by_team(some_lineup, swimmers, 184)
+    lehigh_perf = filter_by_team(pred_perf, swimmers, 141)
+    lehigh_lineup = filter_by_team(some_lineup, swimmers, 141)
     print("\n predicted performance of players (based on average time)\n")
-    print(pd.DataFrame.from_dict(pred_perfA, orient='index'))
+    print(bucknell_perf)
     print("\n lineup used during meet {0} (meet names will be incorporated later, for now here is the url that will "
           "lead to that event: https://www.collegeswimming.com/results/{0}/\n".format(bucknell_vs_lehigh))
-    print(pd.DataFrame.from_dict(some_lineupA, orient='index'))
-    pred_perfA = pd.DataFrame.from_dict(pred_perfA, orient='index')
-    some_lineupA = pd.DataFrame.from_dict(some_lineupA, orient='index')
-    pred_perfB = pd.DataFrame.from_dict(pred_perfB, orient='index')
-    some_lineupB = pd.DataFrame.from_dict(some_lineupB, orient='index')
-    calculate_pred_score(pred_perfA, some_lineupA, pred_perfB, some_lineupB)
+    score_a, score_b = calculate_pred_score(bucknell_perf, bucknell_lineup, lehigh_perf, lehigh_lineup)
+    print(score_a)
+    print(score_b)
 
 
 demo_code()
