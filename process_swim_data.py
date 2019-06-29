@@ -251,8 +251,39 @@ def calculate_pred_score(perfA, lineA, perfB, lineB):
     return score_a, score_b
 
 
+def pred_score_matrix(team_list, lineup_matrix):
+    """
+    This function can currently only handle two teams at once
+    :param team_list: list of pandas dataframes for predicted performances of teams.
+    :param lineup_matrix: 2 dimensional array of lineups. each list within the array is the list of lineups for one team
+    from team_performance_list
+    :return: score_matrix: matrix of scores for teams using each lineup combination
+    """
+    if (len(team_list) == 2) and (len(lineup_matrix) == 2):
+        score_matrix = [[(0,0)] * len(lineup_matrix[1]) for i in range(len(lineup_matrix[0]))]
+        # can't just use [[(0,0)]*n]*b for 2D array. due to screwy logic, L = [(0,0)]*n is read as "make a list of n
+        # tuples each with value (0,0)", which is good, but M = [[(0,0)*n]*b is read as "make a list of containing b
+        # references to the same list L" which would be [L,L,L]. we can change one of the L's to be an R instead, giving
+        # us [L,L,R], because we are simply telling M to change one of its elements to reference something else.
+        # However, if we want to change a value stored in one of the L's, we end up changing that value in all of the
+        # L's because they all reference the same piece of code.
+        # TLDR: [[(0,0)]*n]*b says make list of n tuples with value (0,0), then make that same list b times, whereas
+        # The method we use here says "make a list of n tuples with value (0,0)" and it says it b separate times
+        for team_a_index in range(len(lineup_matrix[0])):
+            for team_b_index in range(len(lineup_matrix[1])):
+                score_a, score_b = calculate_pred_score(team_list[0], lineup_matrix[0][team_a_index],
+                                                        team_list[1], lineup_matrix[1][team_b_index])
+                score_matrix[team_a_index][team_b_index] = (score_a,score_b)
+    print(score_matrix)
+    return score_matrix
+
+
+
+
 def demo_code():
     bucknell_vs_lehigh = 119957
+    bucknell_invitational = 136124
+    bu_lehigh = 119748
     swims, swimmers, teams, event_list = get_data()
     #swims = swims[swims["meet_id"] == bucknell_vs_lehigh]  # check to see that everything works for single meet
     team_data = get_athlete_data(swims, swimmers, teams, event_list)
@@ -262,6 +293,12 @@ def demo_code():
     bucknell_lineup = filter_by_team(some_lineup, swimmers, 184)
     lehigh_perf = filter_by_team(pred_perf, swimmers, 141)
     lehigh_lineup = filter_by_team(some_lineup, swimmers, 141)
+    # get additional lineups for matrix
+    bucknell_inv_lin = get_team_lineup(swims, swimmers, teams, event_list, bucknell_invitational)
+    bucknell_inv_lin = filter_by_team(bucknell_inv_lin, swimmers, 184)
+    bu_lehigh_lin = get_team_lineup(swims, swimmers, teams, event_list, bu_lehigh)
+    bu_lehigh_lin = filter_by_team(bu_lehigh_lin, swimmers, 141)
+    # test individual parts
     print("\n predicted performance of players (based on average time)\n")
     print(bucknell_perf)
     print("\n lineup used during meet {0} (meet names will be incorporated later, for now here is the url that will "
@@ -269,6 +306,8 @@ def demo_code():
     score_a, score_b = calculate_pred_score(bucknell_perf, bucknell_lineup, lehigh_perf, lehigh_lineup)
     print(score_a)
     print(score_b)
-
+    # test matrix
+    score_matrix = pred_score_matrix([bucknell_perf, lehigh_perf],[[bucknell_lineup, bucknell_inv_lin],
+                                                                   [lehigh_lineup, bu_lehigh_lin]])
 
 demo_code()
