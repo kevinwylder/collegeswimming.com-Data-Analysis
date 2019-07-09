@@ -66,13 +66,16 @@ def filter_from_dataset(swims, swimmers, team=None, gender=None, start_year=None
     #NOTE: this might not be what is wanted, spend some time figuring out what is wrong with it, then make sure it is
     # what you are being asked for. If it can't separate the other parts then it is useless.
     filtered_data = swims.copy()
+    filtered_swimmers = swimmers.copy()
     if team:
         filtered_data = filtered_data[filtered_data["team"]==team]
+        filtered_swimmers = filtered_swimmers[filtered_swimmers["team"]==team]
     if gender:
-        gender_swimmers = []
-        for swimmer in swimmers.iterrows():
-            if swimmer[1]["gender"] in gender:  # not sure why the 1 is needed but it works now
-                gender_swimmers.append(swimmer[0])
+        filtered_swimmers = filtered_swimmers[filtered_swimmers["gender"].isin(gender)]
+        gender_swimmers = filtered_swimmers.index.tolist()
+        #for swimmer in swimmers.iterrows():
+        #    if swimmer[1]["gender"] in gender:  # not sure why the 1 is needed but it works now
+        #        gender_swimmers.append(swimmer[0])
         filtered_data = filtered_data[filtered_data["swimmer"].isin(gender_swimmers)]
     if start_year:
         start_timestamp = hf.convert_to_time(int(start_year), SEASON_LINE_MONTH, SEASON_LINE_DAY)
@@ -80,17 +83,30 @@ def filter_from_dataset(swims, swimmers, team=None, gender=None, start_year=None
     if end_year:
         end_timestamp = hf.convert_to_time(int(end_year), SEASON_LINE_MONTH, SEASON_LINE_DAY)
         filtered_data = filtered_data[filtered_data["date"] <= end_timestamp]
-    return filtered_data
+    return filtered_data, filtered_swimmers
 
 
-def get_team_swims(swims, team):  # Not in use
+def filter_by_date_range(swims, swimmers, start_timestamp=None, end_timestamp=None):  # Not in use
     """
-    :param swims: dataframe of raw swim data, including the team a swimmer who performed a swim was on
-    :param team: integer corresponding to the team we want to keep swims for
-    :return: team_swims: a table/pandas dataframe of swims performed by a given team
+    function for filtering raw data
+    :param swims: the database of swims from which we begin to whittle down the group data
+    :param team: an integer team id for the team whose data you may want to collect
+    :param gender: character M or F representing gender whose swims you want to collect
+    :param start_year: all data on the group must be after this year (a default month and start day are used)
+    :param end_year: all data on the group must be before this year (a default month and start day are used)
+    :return: filtered_data: dataset containing only data that you want
     """
-    team_swims = swims[swims["team_id"] == team]
-    return team_swims
+    #NOTE: this might not be what is wanted, spend some time figuring out what is wrong with it, then make sure it is
+    # what you are being asked for. If it can't separate the other parts then it is useless.
+    filtered_data = swims.copy()
+    if start_timestamp:
+        filtered_data = filtered_data[filtered_data["date"] >= start_timestamp]
+    if end_timestamp:
+        filtered_data = filtered_data[filtered_data["date"] < end_timestamp]
+
+    filtered_swimmers = swimmers[swimmers.index.isin(list(filtered_data.swimmer.unique()))]
+
+    return filtered_data, filtered_swimmers
 
 
 def filter_by_team(id_matrix, swimmers, team):  # I should use a more descriptive name than id_matrix if possible
@@ -157,7 +173,7 @@ def get_team_lineup(swims, swimmers, teams, event_list, meet_id):
 
     # updates the dictionary made above so that events an athlete participated in are True (1)
     for swimmer, swimmer_data in group_by_individual:
-        print(swimmer_data[["event","time"]])
+        #  print(swimmer_data[["event","time"]])
         individual_data = swimmer_data[["event","time"]].transpose()
         individual_data.columns = individual_data.iloc[0]
         individual_data.drop("event", inplace=True)
@@ -274,10 +290,7 @@ def pred_score_matrix(team_list, lineup_matrix):
                 score_a, score_b = calculate_pred_score(team_list[0], lineup_matrix[0][team_a_index],
                                                         team_list[1], lineup_matrix[1][team_b_index])
                 score_matrix[team_a_index][team_b_index] = (score_a,score_b)
-    print(score_matrix)
     return score_matrix
-
-
 
 
 def demo_code():
@@ -298,16 +311,43 @@ def demo_code():
     bucknell_inv_lin = filter_by_team(bucknell_inv_lin, swimmers, 184)
     bu_lehigh_lin = get_team_lineup(swims, swimmers, teams, event_list, bu_lehigh)
     bu_lehigh_lin = filter_by_team(bu_lehigh_lin, swimmers, 141)
-    # test individual parts
-    print("\n predicted performance of players (based on average time)\n")
-    print(bucknell_perf)
-    print("\n lineup used during meet {0} (meet names will be incorporated later, for now here is the url that will "
-          "lead to that event: https://www.collegeswimming.com/results/{0}/\n".format(bucknell_vs_lehigh))
     score_a, score_b = calculate_pred_score(bucknell_perf, bucknell_lineup, lehigh_perf, lehigh_lineup)
     print(score_a)
     print(score_b)
     # test matrix
     score_matrix = pred_score_matrix([bucknell_perf, lehigh_perf],[[bucknell_lineup, bucknell_inv_lin],
                                                                    [lehigh_lineup, bu_lehigh_lin]])
+    print(score_matrix)
 
 demo_code()
+
+
+def demo_code_with_time_filter():
+    bucknell_vs_lehigh = 119957
+    bucknell_invitational = 136124
+    bu_lehigh = 119748
+    swims, swimmers, teams, event_list = get_data()
+    team_data_in_range, filtered_swimmers= filter_by_date_range(swims, swimmers, None, 1548460800) #day of bu_lehigh meet
+    #swims = swims[swims["meet_id"] == bucknell_vs_lehigh]  # check to see that everything works for single meet
+    team_data = get_athlete_data(team_data_in_range, filtered_swimmers, teams, event_list)
+    pred_perf = get_predicted_performance_matrix(team_data, 'average_time')
+    some_lineup = get_team_lineup(swims, filtered_swimmers, teams, event_list, bucknell_vs_lehigh)
+    bucknell_perf = filter_by_team(pred_perf, filtered_swimmers, 184)
+    bucknell_lineup = filter_by_team(some_lineup, filtered_swimmers, 184)
+    lehigh_perf = filter_by_team(pred_perf, filtered_swimmers, 141)
+    lehigh_lineup = filter_by_team(some_lineup, filtered_swimmers, 141)
+    # get additional lineups for matrix
+    bucknell_inv_lin = get_team_lineup(team_data_in_range, filtered_swimmers, teams, event_list, bucknell_invitational)
+    bucknell_inv_lin = filter_by_team(bucknell_inv_lin, filtered_swimmers, 184)
+    bu_lehigh_lin = get_team_lineup(team_data_in_range, filtered_swimmers, teams, event_list, bu_lehigh)
+    bu_lehigh_lin = filter_by_team(bu_lehigh_lin, filtered_swimmers, 141)
+    # test individual parts
+    score_a, score_b = calculate_pred_score(bucknell_perf, bucknell_lineup, lehigh_perf, lehigh_lineup)
+    print(score_a)
+    print(score_b)
+    # test matrix
+    score_matrix = pred_score_matrix([bucknell_perf, lehigh_perf],[[bucknell_lineup, bucknell_inv_lin],
+                                                                   [lehigh_lineup, bu_lehigh_lin]])
+    print(score_matrix)
+
+demo_code_with_time_filter()

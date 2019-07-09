@@ -253,7 +253,7 @@ def get_relay_swim_data(team_to_pull, gender_to_pull, season_to_pull, relays_to_
                         freestyle()
         else:
             print("Results for {} not submitted".format(meets[meet_id]["meet_name"]))
-    return relay_swims  # NOTE: can add meets as a return value to use it to make meets database table
+    return relay_swims, meets  # NOTE: can add meets as a return value to use it to make meets database table
 
 
 def get_swim_data(teams_to_pull, genders_to_pull,
@@ -287,6 +287,7 @@ def get_swim_data(teams_to_pull, genders_to_pull,
     cursor.execute(CREATE_SWIMS_TABLE)
     cursor.execute(CREATE_SWIMMER_TABLE.format("Swimmers"))
     cursor.execute(CREATE_TEAM_TABLE.format("Teams"))
+    cursor.execute(CREATE_MEET_TABLE)
     
     # retrieve and add the times to the database
     for simple_year in range(year_start, year_end):   # for each competition year
@@ -325,16 +326,21 @@ def get_swim_data(teams_to_pull, genders_to_pull,
                             cursor.execute(command)
 
                 # Here we get relay times and add those into the database
-                relay_swims = get_relay_swim_data(team_id, gender, season_string, relays_to_pull)
+                relay_swims, meets = get_relay_swim_data(team_id, gender, season_string, relays_to_pull)
                 for relay_swim in relay_swims:
                     relay_command = INSERT_SWIM_COMMAND.format(relay_swim[0],relay_swim[1],relay_swim[2],0,
                                                                relay_swim[4], relay_swim[5], relay_swim[6],
                                                                relay_swim[7], 0, snapshot_id)
                     cursor.execute(relay_command)
+                for meet in meets:
+                    meet_command = INSERT_MEET_COMMAND.format(meet, meets[meet]["meet_name"], meets[meet]["meet_date"],
+                                                              meets[meet]["submitted"], meets[meet]["events"])
+                    cursor.execute(meet_command)
                 # print the loading bar
                 team_counter += 1
                 percent = float(team_counter) / float(len(teams_to_pull))
                 show_loading_bar(percent)
+
         connection.commit()
 
     get_event_times = "SELECT time FROM Swims WHERE event='{}{}' AND date>{} AND date<{}"#I can update this a bit (See notes)
