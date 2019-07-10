@@ -3,6 +3,7 @@ import sqlite3
 from constants import *
 import re
 import helperfunctions as hf
+from collections import Counter
 # This file is for processing the data
 
 
@@ -189,23 +190,28 @@ def score_event(results_a, results_b, places):
     :param places: list of point values awarded for first, second, etc place
     :return: scores of team a and b
     """
-    score_a = score_b = 0
-    for place in places:
-        if len(results_a) > 0 and len(results_b) > 0:
-            if min(results_a) < min(results_b):
-                results_a.remove(min(results_a))
-                score_a += place
+    score_a = score_b = place_counter = 0
+    all_times = results_a + results_b  # make a list of all times scored in the event
+    all_times.sort()  # sort the list in ascending order
+    results_dict = dict(Counter(all_times))  # convert list to dictionary. key is time, value is frequency of time
+
+    for i in results_dict:
+        if place_counter >= len(places):  # When there are no more points to award for the event break the loop
+            break
+
+        if results_dict[i] == 1:  # only one instance of the given time in either list
+            if i in results_a:
+                score_a = score_a + places[place_counter]
             else:
-                results_b.remove(min(results_b))
-                score_b += place
-        elif len(results_a) > 0:
-            results_a.pop()
-            score_a += place
-        elif len(results_b) > 0:
-            results_b.pop()
-            score_b += place
-        else:
-            continue
+                score_b = score_b + places[place_counter]
+        else:  # this signifies a tie, results_dict[i] > 1
+            # split points awarded among all tied players
+            points_per_player = sum(places[place_counter: place_counter + results_dict[i]]) / results_dict[i]
+            score_a += results_a.count(i) * points_per_player
+            score_b += results_b.count(i) * points_per_player
+
+        place_counter = place_counter + results_dict[i]
+
     return score_a, score_b
 
 
@@ -348,6 +354,10 @@ def demo_code_with_time_filter():
     # test matrix
     score_matrix = pred_score_matrix([bucknell_perf, lehigh_perf],[[bucknell_lineup, bucknell_inv_lin],
                                                                    [lehigh_lineup, bu_lehigh_lin]])
+    print(score_matrix)
+    print("tie test")
+    score_matrix = pred_score_matrix([bucknell_perf, bucknell_perf], [[bucknell_lineup, bucknell_inv_lin],
+                                                                      [bucknell_lineup, bucknell_inv_lin]])
     print(score_matrix)
 
 demo_code_with_time_filter()
