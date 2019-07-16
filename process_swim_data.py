@@ -182,17 +182,19 @@ def get_team_lineup(swims, swimmers, teams, event_list, meet_id):
     return pd.DataFrame.from_dict(meet_lineup, orient='index')
 
 
-def score_event(results_a, results_b, places):
+def score_event(results_a, results_b, places, scoring_limit):
     """
     assigns points to groups based on who has the smallest score/time.
     :param results_a: list of recorded times for team a
     :param results_b: list of recorded times for team b
     :param places: list of point values awarded for first, second, etc place
+    :param scoring_limit: the maximum number of swimmers per team that can score in the event
     :return: scores of team a and b
     """
     score_a = score_b = place_counter = 0
     all_times = results_a + results_b  # make a list of all times scored in the event
     all_times.sort()  # sort the list in ascending order
+    a_scorers = b_scorers = 0
     results_dict = dict(Counter(all_times))  # convert list to dictionary. key is time, value is frequency of time
 
     for i in results_dict:
@@ -201,27 +203,35 @@ def score_event(results_a, results_b, places):
 
         if results_dict[i] == 1:  # only one instance of the given time in either list
             if i in results_a:
-                score_a = score_a + places[place_counter]
+                if a_scorers <= scoring_limit:
+                    score_a = score_a + places[place_counter]
             else:
-                score_b = score_b + places[place_counter]
+                if b_scorers <= scoring_limit:
+                    score_b = score_b + places[place_counter]
+
         else:  # this signifies a tie, results_dict[i] > 1
             # split points awarded among all tied players
             points_per_player = sum(places[place_counter: place_counter + results_dict[i]]) / results_dict[i]
-            score_a += results_a.count(i) * points_per_player
-            score_b += results_b.count(i) * points_per_player
+            if a_scorers <= scoring_limit:
+                score_a += results_a.count(i) * points_per_player
+            if b_scorers <= scoring_limit:
+                score_b += results_b.count(i) * points_per_player
 
+        a_scorers += results_a.count(i)
+        b_scorers += results_b.count(i)
         place_counter = place_counter + results_dict[i]
 
     return score_a, score_b
 
 
-def calculate_pred_score(perfA, lineA, perfB, lineB):
+def calculate_pred_score(perfA, lineA, perfB, lineB, scoring_method="Six Lane"):
     """
     returns the predicted score of team A for a swimming meet
     :param perfA: Pandas dataframe of predicted performances for a given team A's swimmers
     :param lineA: Pandas Dataframe of a given lineup for a team A
     :param perfB: Pandas dataframe of predicted performances for a given team B's swimmers
     :param lineB: Pandas Dataframe of a given lineup for a team B
+    :param scoring_method: used to determine how points are allocated
     :return: pred_score: Integer value of team A's predicted
     """
     # This is a predicted performance matrix that only contains values for swimmers in the lineup
@@ -259,7 +269,7 @@ def calculate_pred_score(perfA, lineA, perfB, lineB):
         # get results for each team by event
         results_a = relay_event_results[event][0]
         results_b = relay_event_results[event][1]
-        temp_a, temp_b = score_event(results_a, results_b, RELAY_POINTS)
+        temp_a, temp_b = score_event(results_a, results_b, RELAY_POINTS[scoring_method], SCORER_LIMIT[scoring_method][1])
         score_a += temp_a
         score_b += temp_b
     # score individual events
@@ -267,7 +277,7 @@ def calculate_pred_score(perfA, lineA, perfB, lineB):
     for column_name in individual_events:
         results_a = lineup_scores_a[column_name][lineup_scores_a[column_name].notna()].tolist()
         results_b = lineup_scores_b[column_name][lineup_scores_b[column_name].notna()].tolist()
-        temp_a, temp_b = score_event(results_a, results_b, INDIVIDUAL_POINTS)
+        temp_a, temp_b = score_event(results_a, results_b, INDIVIDUAL_POINTS[scoring_method], SCORER_LIMIT[scoring_method][0])
         score_a += temp_a  # cannot add to two values at same time
         score_b += temp_b
     return score_a, score_b
@@ -325,7 +335,7 @@ def demo_code():
                                                                    [lehigh_lineup, bu_lehigh_lin]])
     print(score_matrix)
 
-demo_code()
+#demo_code()
 
 
 def demo_code_with_time_filter():
@@ -342,6 +352,10 @@ def demo_code_with_time_filter():
     bucknell_lineup = filter_by_team(some_lineup, filtered_swimmers, 184)
     lehigh_perf = filter_by_team(pred_perf, filtered_swimmers, 141)
     lehigh_lineup = filter_by_team(some_lineup, filtered_swimmers, 141)
+    print("lineup example")
+    print(bucknell_lineup)
+    print("pred perf example")
+    print(bucknell_perf)
     # get additional lineups for matrix
     bucknell_inv_lin = get_team_lineup(team_data_in_range, filtered_swimmers, teams, event_list, bucknell_invitational)
     bucknell_inv_lin = filter_by_team(bucknell_inv_lin, filtered_swimmers, 184)

@@ -44,7 +44,15 @@ DEFAULT_TEAMS_TO_PULL = ["Bucknell University", "Lehigh University"]
 DEFAULT_YEAR_START = 2018
 DEFAULT_YEAR_END = 2019
 
-# Point Values
-INDIVIDUAL_POINTS = [9, 4, 3, 2, 1]
-RELAY_POINTS = [11, 4, 2]
+# Point Values for each place in an event category. Format: {# of Lanes: [1st place, 2nd place,... nth place]}
+INDIVIDUAL_POINTS = {"Six Lane": [9, 4, 3, 2, 1, 0], "Five Lane": [5, 3, 1, 0]}
+RELAY_POINTS = {"Six Lane": [11, 4, 2], "Five Lane": [7, 0]}
+# Limit for number of people who can score per team in each event type. Format: {# of Lanes: [Individual, Relay]}
+SCORER_LIMIT = {"Six Lane": [3,2], "Five Lane": [2,1]}
 
+#
+#SCORING_CONSTRAINTS = {"Dual": {"Six": {"Individual": [9, 4, 3, 2, 1], "Relay": [11, 4, 2], "Limit": [3, 2]},
+#                                "Five": {"Individual": [5, 3, 1], "Relay": [7, 0], "Limit": [2, 1]}},
+#                       "Double Dual": {"Nine": {"Individual": [9, 4, 3, 2, 1], "Relay": [11, 4, 2], "Limit": [3,2]},
+#                                       "Eight": {"Individual": [9, 4, 3, 2, 1], "Relay": [11, 4, 2], "Limit": [3,2]}},
+#                       "Triangular": ""}
