@@ -14,6 +14,10 @@ SEASON_LINE_DAY = 15
 SWIMMER_URL = "https://www.collegeswimming.com/swimmer/{}"
 SWIMMER_EVENT_URL = "https://www.collegeswimming.com/swimmer/{}/times/byeventid/{}"
 ROSTER_URL = "https://www.collegeswimming.com/team/{}/roster?season={}&gender={}"
+RESULTS_URL = "https://www.collegeswimming.com/team/{}/results/?page=1&name=&meettype=&season={}"
+MEET_URL = "https://www.collegeswimming.com/results/{}/?gender={}"
+MEET_EVENT_URL = "https://www.collegeswimming.com/results/{}/event/{}/"
+SPLASH_SPLITS_URL = "https://www.collegeswimming.com/times/{}/splashsplits/"
 
 # Missing data in createXYZTable is filled in by data put into insertXYZCommand using .format()
 # Constants for creating and inserting to a table of swim times
@@ -35,7 +39,10 @@ CREATE_MEET_TABLE = "CREATE TABLE IF NOT EXISTS Meets (meet_id INTEGER PRIMARY K
 CHECK_MEET_TABLE = "SELECT meet_id FROM Meets WHERE meet_id={};"
 INSERT_MEET_COMMAND = "INSERT INTO Meets VALUES({}, {}, {}, {}, {});"
 
-# Default inputs for team_dict_generator
+########################################################################################################################
+#                               DEFAULT INPUTS FOR get_swim_data. CAN CHANGE HERE                                      #
+########################################################################################################################
+# Default inputs for get_swim_data.py
 DEFAULT_SEASON = "2018-2019"
 DEFAULT_GENDER = ["F"]
 DEFAULT_EVENTS_TO_PULL = ["M200Y", "11650Y", "1200Y", "2100Y", "3100Y", "4200Y", "150Y", "1100Y", "2200Y", "3200Y",
@@ -44,6 +51,9 @@ DEFAULT_TEAMS_TO_PULL = ["Bucknell University", "Lehigh University"]
 DEFAULT_YEAR_START = 2018
 DEFAULT_YEAR_END = 2019
 
+########################################################################################################################
+#                                 SCORING RULES FOR process_swim_data CAN BE CHANGED HERE                              #
+########################################################################################################################
 # Point Values for each place in an event category. Format: {# of Lanes: [1st place, 2nd place,... nth place]}
 INDIVIDUAL_POINTS = {"Six Lane": [9, 4, 3, 2, 1, 0], "Five Lane": [5, 3, 1, 0]}
 RELAY_POINTS = {"Six Lane": [11, 4, 2], "Five Lane": [7, 0]}

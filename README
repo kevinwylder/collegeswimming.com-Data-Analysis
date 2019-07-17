@@ -1,4 +1,5 @@
-Written by Kevin Wylder
+Written by Brad Beacham
+Adapted from code written by Kevin Wylder
 
 TL;DR - Set the parameters when you run the program. Run the following commands
             python get_swim_data.py
@@ -138,4 +139,5 @@ collegeswimming.com url structure
 
 
 A Note to you (fellow developer) from Brad:
-All of the R/analysis files were deleted on June 21st, 2019. If something goes wrong you can find them in any of the branches that predate brad-task-014
+All of the R/analysis files were deleted on June 21st, 2019. They can be found in any of
+the branches that predate brad-task-014

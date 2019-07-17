@@ -14,32 +14,35 @@ import datetime
 
 def convert_to_time(year, month, day):
     """
-    Input integer values for year, month, and day of month
-    Output total number of seconds since epoch
+    :param year: numerical value representing a year
+    :param month: number value of a month in the year (i.e. 1 is january)
+    :param day: day of month
+    :return: integer timestamp of time since epoch in seconds
     """
     return (datetime.datetime(int(year), int(month), int(day)) - datetime.datetime(1970,1,1)).total_seconds()
 
 
-def to_title(event_string):
-    """
-    Use when displaying results (not during data collection)
-    :param event_string: String abbreviation of an event name.
-    :return: Full human-readable event name
-    """
-    gender_map = {"M": "Men", "F": "Women", "X": "Mixed"}
-    stroke_map = {"1": "Freestyle", "2": "Backstroke", "3": "Breaststroke", "4": "Butterfly", "5": "IM",
-                  "M": "Medley Relay: ", "F": "Free Relay: ", "L": "Leadoff"}
-
-    gender = event_string[0]
-    stroke = event_string[1]
-    if event_string[2] in "MF":
-        relay_tag = stroke_map[event_string[2]]
-        distance = event_string[3:-1]
-    else:
-        relay_tag = ""
-        distance = event_string[2:-1]
-
-    return "{}'s {} Yard {}".format(gender_map[gender], distance, relay_tag + stroke_map[stroke])
+# def to_title(event_string):  # NOTE: Never used
+#     """
+#     Use when displaying results (not during data collection)
+#     :param event_string: String abbreviation of an event name.
+#     :return: Full human-readable event name
+#     """
+#     #
+#     gender_map = {"M": "Men", "F": "Women", "X": "Mixed"}
+#     stroke_map = {"1": "Freestyle", "2": "Backstroke", "3": "Breaststroke", "4": "Butterfly", "5": "IM",
+#                   "M": "Medley Relay: ", "F": "Free Relay: ", "L": "Leadoff"}
+#
+#     gender = event_string[0]
+#     stroke = event_string[1]
+#     if event_string[2] in "MF":
+#         relay_tag = stroke_map[event_string[2]]
+#         distance = event_string[3:-1]
+#     else:
+#         relay_tag = ""
+#         distance = event_string[2:-1]
+#
+#     return "{}'s {} Yard {}".format(gender_map[gender], distance, relay_tag + stroke_map[stroke])
 
 
 def to_event_title(event_string):
@@ -48,9 +51,11 @@ def to_event_title(event_string):
     :param event_string: String abbreviation of an event name.
     :return: Full human-readable event name from collegeswimming
     """
-    gender = event_string[0]
-    stroke = event_string[1]
-    distance = event_string[2:-1]
+    # break event_string into its component parts
+    gender = event_string[0]  # can be M, F, or X
+    stroke = event_string[1]  # can be 1, 2, 3, 4, 5, M, or F
+    distance = event_string[2:-1]  # the distance of the event. can be a lot of values
+
     gender_map = {"M": "Men", "F": "Women", "X": "Mixed"}
     stroke_map = {"1": "Free", "2": "Back", "3": "Breast", "4": "Fly", "5": "IM",
                   "M": "Medley Relay", "F": "Free Relay"}
@@ -59,14 +64,13 @@ def to_event_title(event_string):
 
 def normalize_name(name):
     """
-    Input a string name.
-    Output a string where the first letter of every word is capitalized.
     Note: this assumes there are 1 or 0 apostrophes in the name
-    Makes sure every name is properly formatted according to english grammar rules.
-    Input "Brad o'hara" Output "Brad O'Hara"
+    :param name: string that is meant to be the name of something/someone (e.g. Brad beacham)
+    :return name: Now properly formatted according to english grammar rules. (e.g. Brad Beacham)
     """
     name_parts = name.split()
     name = " ".join([part.lower().capitalize() for part in name_parts])
+    # if there is an apostrophe in the name, capitalize the first letter after it
     n = name.find("'")
     if n > -1:
         name = name[:n+1] + name[n+1:].capitalize()
@@ -79,6 +83,8 @@ def sqlsafe(name):
     Output edited string where apostrophes are doubled.
     Note: this assumes there are 1 or 0 apostrophes in the name
     Input " ' " output " '' "
+    :param name: a string. should be someones name
+    :return name: same string with one extra apostrophe, if there was one (1) there before. otherwise just same.
     """
     n = name.find("'")
     if n > -1:
