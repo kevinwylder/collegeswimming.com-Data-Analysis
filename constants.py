@@ -13,7 +13,7 @@ SEASON_LINE_DAY = 15
 # URL's for pulling data from
 SWIMMER_URL = "https://www.collegeswimming.com/swimmer/{}"
 SWIMMER_EVENT_URL = "https://www.collegeswimming.com/swimmer/{}/times/byeventid/{}"
-ROSTER_URL = "https://www.collegeswimming.com/team/{}/roster?season={}&gender={}"
+ROSTER_URL = "https://www.collegeswimming.com/team/{}/roster/?page=1&gender={}&season={}"
 RESULTS_URL = "https://www.collegeswimming.com/team/{}/results/?page=1&name=&meettype=&season={}"
 MEET_URL = "https://www.collegeswimming.com/results/{}/?gender={}"
 MEET_EVENT_URL = "https://www.collegeswimming.com/results/{}/event/{}/"
@@ -35,9 +35,14 @@ CREATE_SWIMMER_TABLE = "CREATE TABLE IF NOT EXISTS {} (name TEXT, gender TEXT, s
 CHECK_SWIMMER_TABLE = "SELECT swimmer_id FROM {} WHERE swimmer_id={} LIMIT 1;"
 ADD_TO_SWIMMER_TABLE = "INSERT INTO {} VALUES('{}', '{}', {}, {});"
 # Constants for creating and maintaining table of meets
-CREATE_MEET_TABLE = "CREATE TABLE IF NOT EXISTS Meets (meet_id INTEGER PRIMARY KEY, meet_name TEXT, meet_date TEXT, meet_submitted INTEGER, event_dict BLOB);"
+CREATE_MEET_TABLE = "CREATE TABLE IF NOT EXISTS Meets (meet_id INTEGER, meet_name TEXT, meet_date TEXT, meet_submitted INTEGER);"
 CHECK_MEET_TABLE = "SELECT meet_id FROM Meets WHERE meet_id={};"
-INSERT_MEET_COMMAND = "INSERT INTO Meets VALUES({}, {}, {}, {}, {});"
+INSERT_MEET_COMMAND = "INSERT INTO Meets VALUES({}, {}, {}, {});"
+
+#INSERT INTO Meets VALUES({}, {}, {}, {}) ON CONFLICT(meet_id) DO UPDATE SET age=excluded.age;
+
+
+
 
 ########################################################################################################################
 #                               DEFAULT INPUTS FOR get_swim_data. CAN CHANGE HERE                                      #
@@ -48,8 +53,8 @@ DEFAULT_GENDER = ["F"]
 DEFAULT_EVENTS_TO_PULL = ["M200Y", "11650Y", "1200Y", "2100Y", "3100Y", "4200Y", "150Y", "1100Y", "2200Y", "3200Y",
                           "1500Y", "4100Y", "5200Y", "F200Y"]
 DEFAULT_TEAMS_TO_PULL = ["Bucknell University", "Lehigh University"]
-DEFAULT_YEAR_START = 2018
-DEFAULT_YEAR_END = 2019
+DEFAULT_YEAR_START = 2017
+DEFAULT_YEAR_END = 2018
 
 ########################################################################################################################
 #                                 SCORING RULES FOR process_swim_data CAN BE CHANGED HERE                              #

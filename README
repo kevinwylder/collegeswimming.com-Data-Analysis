@@ -1,14 +1,15 @@
 Written by Brad Beacham
 Adapted from code written by Kevin Wylder
 
-TL;DR - Set the parameters when you run the program. Run the following commands
+TL;DR - ####THIS NEEDS TO BE REWRITTEN WHEN DONE####
+        Set the parameters when you run the program. Run the following commands
             python get_swim_data.py
-            python analysis.py
+            python process_swim_data.py
         and look in the graphs directory for fun data.
         You can check the database for your own analysis, but you'd have to RTFM.
 
 Files:
-parameters.py
+constants.py
     A python class that controls main.py and analysis.py. This is just a list of editable
     parameters. If you change the Global Parameters, delete everything and restart main.py
     Editing analysis.py params is fine. This also includes some support functions

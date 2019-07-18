@@ -77,7 +77,7 @@ def get_roster(team_id, season, gender):
     """
     team = {}
     #gets a list of (Name, swimmer_id) tuples and the team name for a given team_id
-    url = ROSTER_URL.format(team_id, season, gender)
+    url = ROSTER_URL.format(team_id, gender, season)
     try:  # open the url for the given team_id, season, and gender
         page = urllib.request.urlopen(url)
         source = page.read()
@@ -198,7 +198,7 @@ def get_relay_leg_times(team_id, meet_id, relay_id):
     team_instances = soup.find_all("a", href="/team/{}".format(team_id))  # find out actual name for relay teams
     # get relay leg times by relay team (note that all relay teams checked are from same main team)
     for team in team_instances:
-        if len(team.attrs) == 1:  # team names are mentioned multiple times in each row, check for correct column
+        if len(team.attrs) == 2:  # team names are mentioned multiple times in each row, check for correct column
             # if a team was disqualified, skip it
             if "DQ" in team.find_parent('td').find_next_sibling().text:
                 print("excluding disqualified team.")
@@ -226,8 +226,8 @@ def get_relay_leg_times(team_id, meet_id, relay_id):
                 print("no splits available for meet {}".format(meet_id))
                 return []
             for row in splash_soup.find_all("tr"):
-                if row.find_all("td")[3].text[0].isdigit():  # in relays longer than 200Y, not all rows have leg times.
-                    times.append(row.find_all("td")[3].text)  # this is the leg time for a given swimmer.
+                if row.find_all("td")[-1].text[0].isdigit():  # in relays longer than 200Y, not all rows have leg times.
+                    times.append(row.find_all("td")[-1].text)  # this is the leg time for a given swimmer.
         else:
             continue
     print(swimmer_id_list)
@@ -343,7 +343,8 @@ def get_swim_data(teams_to_pull, genders_to_pull,
     
     # retrieve and add the times to the database
     for simple_year in range(year_start, year_end):   # for each competition year, do the following
-        season_string = str(simple_year) + "-" + str(simple_year + 1)
+        # THIS IS WHERE SEASON STRING IS MADE AND ROSTER URL BUILDING IS STARTED
+        season_string = simple_year - 1996#str(simple_year) + "-" + str(simple_year + 1)  # old method
         print("Collecting Season {}".format(season_string))
         search_start_timestamp = convert_to_time(int(simple_year), SEASON_LINE_MONTH, SEASON_LINE_DAY)
         search_end_timestamp = convert_to_time(int(simple_year) + 1, SEASON_LINE_MONTH, SEASON_LINE_DAY)
@@ -393,10 +394,9 @@ def get_swim_data(teams_to_pull, genders_to_pull,
 
                 # Add meet data to database meets table
                 # NOTE: Meets table still hasn't been pulled/created yet, if get_swim_data fails try commenting out this
-                for meet in meets:
-                    meet_command = INSERT_MEET_COMMAND.format(meet, meets[meet]["meet_name"], meets[meet]["meet_date"],
-                                                              meets[meet]["submitted"], meets[meet]["events"])
-                    cursor.execute(meet_command)
+                #for meet in meets:
+                #    meet_command = INSERT_MEET_COMMAND.format(meet, meets[meet]["meet_name"], meets[meet]["meet_date"], meets[meet]["submitted"])
+                #    cursor.execute(meet_command)
 
                 # print the loading bar
                 team_counter += 1
@@ -491,7 +491,7 @@ def inputs_for_swim_data_search(all_default=False):
         allows you to input values for get_swim_data as you like. if all_default is True you can input things manually
         upon calling the function. if it is False then it will just use default values listed in constants.py
     """
-    if (all_default == True):
+    if all_default == True:
         events_to_pull = DEFAULT_EVENTS_TO_PULL
         genders_to_pull = DEFAULT_GENDER
         teams_to_pull = DEFAULT_TEAMS_TO_PULL

@@ -377,8 +377,8 @@ def demo_code():
 
 
 def demo_code_with_time_filter():
-    bucknell_vs_lehigh = 119957
-    bucknell_invitational = 136124
+    bucknell_vs_lehigh = 104170
+    bucknell_invitational = 103623
     bu_lehigh = 119748
     swims, swimmers, teams, event_list = get_data()
     team_data_in_range, filtered_swimmers= filter_by_date_range(swims, swimmers, None, 1548460800) #day of bu_lehigh meet
