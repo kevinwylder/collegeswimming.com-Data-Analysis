@@ -10,57 +10,60 @@ TL;DR - ####THIS NEEDS TO BE REWRITTEN WHEN DONE####
 
 Files:
 constants.py
-    A python class that controls main.py and analysis.py. This is just a list of editable
-    parameters. If you change the Global Parameters, delete everything and restart main.py
-    Editing analysis.py params is fine. This also includes some support functions
+    A python module can be used to control what is done in get_swim_data.py and process_swim_data.py. You can use it to
+    choose what events, teams, genders, seasons, etc. are collected by get_swim_data.py. You can also change how
+    calculations in process_swim_data are made.
     Global parameters -
-        databaseFileName: the output file name, in the directory this script is run
-        seasonLineMonth: the first month of the year that starts off the season
-        seasonLineDay: the day of the month that corresponds to the first day of season
-    main.py parameters -
-        eventsToPull: an array of events that will be searched for in each swimmer
-        gendersToPull: an array of which genders to search for. "M" and/or "F"
-        teamsToPull: an array of teamIds that will be searched for. You can use the range
-                     function, but this will
-        yearStart: the starting year of this search
-        yearEnd: the ending year of this search
-    analysis.py parameters -
-    	eventHistograms: a list of events to graph with histogram_event.R
-        teamsToReview: a list of teams to graph with team_history.R and team_season.R
-        swimmersToReview: a list of swimmers to graph with individual_season.R
-        reviewYearStart and reviewYearEnd: the starting analysis year. this is used in
-                                           conjunction with the gobal parameters
+        DATABASE_FILE_NAME: the output file name, it is where get_swim_data.py stores its data
+        SEASON_LINE_MONTH: the first month of the year that starts off the season
+        SEASON_LINE_DAY: the day of the month that corresponds to the first day of season
+    URL's for pulling data:
+        SWIMMER_URL = Base for URLs leading to individual swimmers pages
+        SWIMMER_EVENT_URL = Base for URLs leading to dictionary of swimmer times in specific events
+        ROSTER_URL = Base for URLs leading to a team's roster
+        RESULTS_URL = Base for URLs leading to list of all meets a team competed in during a given season
+        MEET_URL = Base for URLs going to webpage for a specific meet
+        MEET_EVENT_URL = Base for URLs going to a webpage for specific event in a meet
+        SPLASH_SPLITS_URL = Base for URLs going to webpage for split times in a relay event for a single relay team
+    get_swim_data.py parameters -
+        DEFAULT_EVENTS_TO_PULL: an array of events that will be searched for in each swimmer
+        DEFAULT_GENDER: an array of which genders to search for. "M" and/or "F"
+        DEFAULT_TEAMS_TO_PULL: an array of team names that will be searched for. You must input a full team/school name
+        DEFAULT_YEAR_START: the starting year of this search
+        DEFAULT_YEAR_END: the ending year of this search
+    process_swim_data.py parameters -
+    	INDIVIDUAL_POINTS: A dictionary where the values are arrays of integers that correspond to the number of points
+            a player would be awarded for placing in an individual event at a swim meet. The keys correspond to pools
+            of different sizes
+        RELAY_POINTS: A dictionary where values are arrays of integers corresponding to points a team is awarded for
+            placing in a relay event at a swim meet. Keys correspond to pools of different sizes
+        SCORER_LIMIT: A dictionary where values are arrays of integers corresponding to maximum number of players that
+            can place in a single event from one team. First index of array is for individual events, second is for
+            relays. Keys correspond to different pool sizes.
 
-main.py
-    A python script to create the database of swims. This is the main script of the
+get_swim_data.py
+    A python module to create the database of swims. This is the main script of the
     project so you should definitely start by running this. It may take a while, and
     obviously requires an internet connection. The result of running this is a sqlite3
-    database in the working directory with the name set in parameters.py
+    database in the working directory with the name set in constants.py
 
-analysis.py
-    A python script to graph whatever is specified in parameters.py. This script is really
-    just a wrapper for the R scripts, which do all the real work.
-
-histogram_event.R
-    creates a graph of an event over the specified time period
-
-team_history.R
-
-team_season.R
-
-individual_season.R
+process_swim_data.py
+    A python module for processing data collected by get_swim_data. Contains functions for finding lineups used by
+    teams at different meets. Can be used for calculating predicted score matrix between two teams each using any number
+    of lineups.
 
 Important Structures:
 database structure
     The table "Swims" will hold all the swims pulled off collegeswimming.com.
     the columns of these tables in the database are as follows (in order)
-    --------------------------------------------------------------------
-    | swimmer | team | time | scaled | event | date | taper | snapshot |
-    --------------------------------------------------------------------
+    ------------------------------------------------------------------------------
+    | swimmer | team | time | scaled | meet_id | event | date | taper | snapshot |
+    ------------------------------------------------------------------------------
     swimmer: an int for the swimmer's ID on collegeswimming.com
     team: an int for the team's teamId on collegeswimming.com
     time: a float representing the number of seconds the swim took
     scaled: a float z score according to this event's season
+    meet_id: an int for the ID of the meet this swim came from on collegeswimming.com
     event: a gender char followed by collegeswimming.com's event structure (ex: M150Y)
     date: the day of the swim represented by the number of seconds since unix epoch
     taper: was this a taper swim? We have to guess b/c it's not online. possible values:
@@ -71,8 +74,19 @@ database structure
     snapshot: an integer that corresponds to when this row was added to the database. This
               is just to help control duplicates and have more info about the farming.
 
-    "Swimmers" and "Teams" are tables to match Strings to swimmer or team identification
-    ints from collegeswimming.com. These tables will have the following columns:
+    The table "Swimmers" holds all swimmers pulled off collegeswimming.com,
+    the columns of the table are as follows (in order)
+    ----------------------------------------
+    | name | gender | swimmer_id | team_id |
+    ----------------------------------------
+    name: String spelling out swimmer's name
+    gender: Character "M" or "F" representing gender ("Male" or "Female") of swimmer
+    swimmer_id: Integer ID that matches this swimmer. Uniquely identifies any swimmer.
+    team_id: Integer ID that corresponds to the team this swimmer is from. Uniquely identifies
+             any team.
+
+    The "Teams" table matches Strings to team identification ints from collegeswimming.com.
+    This table has the following columns:
     -------------
     | name | id |
     -------------
@@ -102,7 +116,9 @@ collegeswimming.com event structure
         2 - Backstroke
         3 - Breaststroke
         4 - Butterfly
-        5 - Individual Meadly
+        5 - Individual Medley
+        F - Freestyle Relay
+        M - Medley Relay
     B: The distance of the event. While it shows there being 4 B's above, there is no
        specification, it can be from 2 to 4 digits
     C: The pool type
@@ -139,6 +155,7 @@ collegeswimming.com url structure
     B: the event structure. This is defined above as "collegeswimming.com event structure"
 
 
-A Note to you (fellow developer) from Brad:
+A note from Brad:
 All of the R/analysis files were deleted on June 21st, 2019. They can be found in any of
-the branches that predate brad-task-014
+the branches that predate brad-task-014. 
+
