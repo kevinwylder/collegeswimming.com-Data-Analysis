@@ -55,7 +55,7 @@ else:
 ## End INPUT SETTINGS
 
 #DATA arrays from Excel workbook:
-    #%data: athlete set, event set, stroke set,  event_noMR set, event11 set, indivrun set, relay set, relaynoMR set, homerank set, opprank set, place set, scenario set, scenprob[scenario], BigM[event11], opptime[opprank,event11,scenario], playperf[athlete, event_noMR], playperfMR[athlete, stroke],indivplcscore[place], relayplcscore[place], Maxevent, Maxindevent, Maxrelayevent, TopopprankIndiv, TopopprankRelay, TopplaceIndiv, TopplaceRelay
+    #%data: athlete set, event set, stroke set,  event_noMR set, event11 set, indivrun set, relay set, relaynoMR set, homerank set, opprank set, place set, scenario set, scenprob[scenario], BigM[event11], opptime[opprank,event11,scenario], playperf[athlete, event_noMR], playperfMR[athlete, stroke],indivplcscore[place], relayplcscore[place], Maxevent, Maxindevent, Maxrelayevent, TopopprankIndiv, TopopprankRelay
 
 #highest relative rank for home
 Tophomerank = 3;
