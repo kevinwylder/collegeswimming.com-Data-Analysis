@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, date, time
 import matplotlib.pyplot as plt
+from process_swim_data import *
 
 
 def FindOptStrategy(team, payoffmatrix):
@@ -141,18 +142,20 @@ def AssgnRead(ExcelWBName,ExcelWSName):
 ##########################################################################  
 #If the above function is called in this program, run it. If it used as a imported module, the it is ignored 
 if __name__ == '__main__':
-    # a = [[75,80,90],[80,76,70],[45,110,120]]
+    score_matrix = demo_code_with_time_filter()
     # #Return the Nash equilibrium mixed strategy and expected points for team A and team B.
-    # f,optA = FindOptStrategy('A',a)
-    # g,optB = FindOptStrategy('B',a)
-    # print('\n')
-    # print(f)
-    # print('\n')
-    # print(g)
+    f,optA = FindOptStrategy('A', score_matrix)
+    g,optB = FindOptStrategy('B',score_matrix)
+    print('\n Printing f')
+    print(f)
+    print('\n Printing optA')
+    print(optA)
+    print('\n Printing g')
+    print(g)
+    print('\n Printing optB')
+    print(optB)
 
     #Read in and format the performance data
-    dfperf = PerfRead('HPHS GBN Input Data_PerfandAssignment.xlsx','1. Team Predicted Data Input')
-    dfassgn = AssgnRead('HPHS GBN Input Data_PerfandAssignment.xlsx','Team Assignment')
-
-    
+    #dfperf = PerfRead('HPHS GBN Input Data_PerfandAssignment.xlsx','1. Team Predicted Data Input')
+    #dfassgn = AssgnRead('HPHS GBN Input Data_PerfandAssignment.xlsx','Team Assignment')
 

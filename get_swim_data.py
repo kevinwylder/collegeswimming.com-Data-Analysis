@@ -395,8 +395,12 @@ def get_swim_data(teams_to_pull, genders_to_pull,
                 # Add meet data to database meets table
                 # NOTE: Meets table still hasn't been pulled/created yet, if get_swim_data fails try commenting out this
                 #for meet in meets:
-                #    meet_command = INSERT_MEET_COMMAND.format(meet, meets[meet]["meet_name"], meets[meet]["meet_date"], meets[meet]["submitted"])
-                #    cursor.execute(meet_command)
+                #    matches = cursor.execute(CHECK_MEET_TABLE.format(meet))
+                #    if matches.fetchone() is None:
+                #        meet_command = INSERT_MEET_COMMAND.format(meet, meets[meet]["meet_name"],
+                #                                                  meets[meet]["meet_date"],
+                #                                                  meets[meet]["submitted"])
+                #        cursor.execute(meet_command)
 
                 # print the loading bar
                 team_counter += 1

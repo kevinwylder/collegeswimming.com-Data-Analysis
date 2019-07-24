@@ -53,8 +53,8 @@ DEFAULT_GENDER = ["F"]
 DEFAULT_EVENTS_TO_PULL = ["M200Y", "11650Y", "1200Y", "2100Y", "3100Y", "4200Y", "150Y", "1100Y", "2200Y", "3200Y",
                           "1500Y", "4100Y", "5200Y", "F200Y"]
 DEFAULT_TEAMS_TO_PULL = ["Bucknell University", "Lehigh University"]
-DEFAULT_YEAR_START = 2017
-DEFAULT_YEAR_END = 2018
+DEFAULT_YEAR_START = 2018
+DEFAULT_YEAR_END = 2019
 
 ########################################################################################################################
 #                                 SCORING RULES FOR process_swim_data CAN BE CHANGED HERE                              #

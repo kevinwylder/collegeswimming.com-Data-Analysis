@@ -101,6 +101,7 @@ def filter_from_dataset(swims, swimmers, team=None, gender=None, start_year=None
 
     return filtered_data, filtered_swimmers
 
+
 # TODO: might be worth to implement this and filter_by_team into get_athlete_data
 def filter_by_date_range(swims, swimmers, start_timestamp=None, end_timestamp=None):  # Not in use
     """
@@ -377,11 +378,11 @@ def demo_code():
 
 
 def demo_code_with_time_filter():
-    bucknell_vs_lehigh = 104170
-    bucknell_invitational = 103623
+    bucknell_vs_lehigh = 119957
+    bucknell_invitational = 136124
     bu_lehigh = 119748
     swims, swimmers, teams, event_list = get_data()
-    team_data_in_range, filtered_swimmers= filter_by_date_range(swims, swimmers, None, 1548460800) #day of bu_lehigh meet
+    team_data_in_range, filtered_swimmers= filter_by_date_range(swims, swimmers, None, 1548460800) #day of bu_lehigh meet 1548460800
     #swims = swims[swims["meet_id"] == bucknell_vs_lehigh]  # check to see that everything works for single meet
     team_data = get_athlete_data(team_data_in_range, filtered_swimmers, teams, event_list)
     pred_perf = get_predicted_performance_matrix(team_data, 'average_time')
@@ -411,5 +412,13 @@ def demo_code_with_time_filter():
     score_matrix = pred_score_matrix([bucknell_perf, bucknell_perf], [[bucknell_lineup, bucknell_inv_lin],
                                                                       [bucknell_lineup, bucknell_inv_lin]])
     print(score_matrix)
+    team_a_matrix = []
+    for i in range(len(score_matrix)):
+        team_a_matrix.append([])
+        for j in score_matrix[i]:
+            team_a_matrix[i].append(j[0])
 
-demo_code_with_time_filter()
+    print(team_a_matrix)
+    return(team_a_matrix)
+
+#demo_code_with_time_filter()
