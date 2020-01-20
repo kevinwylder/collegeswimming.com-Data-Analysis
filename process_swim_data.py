@@ -4,6 +4,7 @@ from constants import *
 import re
 import helperfunctions as hf
 from collections import Counter
+import math
 # This file is for processing the data
 
 
@@ -153,6 +154,7 @@ def get_predicted_performance_matrix(team_data, preference):
     Outputs:
     athlete_prediction_dictionary, a dictionary of athletes and their predicted performances
     """
+    # NOTE: This returns a DATA FRAME since it converts the dictionary into a data frame.
     # NOTE: In the future when we decide how this information is input, there should be a dictionary that converts
     #  different input types to be equal to these values (i.e. {"minimum" : MIN,...}), or the reverse of this
     # NOTE: It also might be a good idea to use athlete ID instead of name somewhere in case two team members have the
@@ -170,6 +172,7 @@ def get_predicted_performance_matrix(team_data, preference):
         individual_data.drop("event", inplace=True)
         # add a dictionary entry for that athlete with all of the events and predicted times
         athlete_prediction_dictionary[athlete] = individual_data.to_dict('records')[0]
+    #print(athlete_prediction_dictionary)
     # convert dictionary to pandas dataframe and return it
     return pd.DataFrame.from_dict(athlete_prediction_dictionary, orient='index')
 
@@ -272,8 +275,10 @@ def calculate_pred_score(perf_team_a, line_team_a, perf_team_b, line_team_b, sco
 
     # Find times for all relay events and put them together in one dictionary
     event_list = lineup_scores_a.columns.tolist()
-    r = re.compile(".L[MF].+")  # look for relay events. the lookup is performed by finding the leadoff
+    # look for relay events. the lookup is performed by finding the leadoff
+    r = re.compile(".L[MF].+")  
     relay_list = list(filter(r.match, event_list))
+    #print(relay_list)
     relay_event_results = dict()
     for value in relay_list:
         #find out what type of relay value is and make list of legs in relay
@@ -303,6 +308,7 @@ def calculate_pred_score(perf_team_a, line_team_a, perf_team_b, line_team_b, sco
     for event in relay_event_results:
         # get results for each team by event
         results_a = relay_event_results[event][0]
+        #print("results for relay event ", event, " are ", results_a)
         results_b = relay_event_results[event][1]
         temp_a, temp_b = score_event(results_a, results_b, RELAY_POINTS[scoring_method], SCORER_LIMIT[scoring_method][1])
         score_a += temp_a
@@ -311,6 +317,7 @@ def calculate_pred_score(perf_team_a, line_team_a, perf_team_b, line_team_b, sco
     individual_events = list(filter(lambda x: x[2] not in "MF", event_list))
     for column_name in individual_events:
         results_a = lineup_scores_a[column_name][lineup_scores_a[column_name].notna()].tolist()
+        #print("results for event ", column_name, " are ", results_a)
         results_b = lineup_scores_b[column_name][lineup_scores_b[column_name].notna()].tolist()
         temp_a, temp_b = score_event(results_a, results_b, INDIVIDUAL_POINTS[scoring_method],
                                      SCORER_LIMIT[scoring_method][0])
@@ -345,6 +352,27 @@ def pred_score_matrix(team_list, lineup_matrix):
                                                         team_list[1], lineup_matrix[1][team_b_index])
                 score_matrix[team_a_index][team_b_index] = (score_a, score_b)
     return score_matrix
+
+
+def convert_predperf_df_to_dict(predperf_df):
+    """
+    This function will convert predicted performance data frame to a dictionary and
+    replace the null values with three times the max value (MAY NEED TO REPLACE MAX'S WITH BIG M LATER)
+    :param df: a data frame to convert
+    :return: predperf_dict : dictionary of the predicted performance time for each swimmer in each event
+    """
+    predperf_dict = predperf_df.to_dict('index') 
+    swimmers_list = predperf_df.index.values.tolist()
+    events_list = predperf_df.columns.values.tolist()
+    for e in events_list:
+        max = predperf_df[e].max()
+        #print("max of event ",e," is ",max)
+        for s in swimmers_list:
+            if math.isnan(predperf_dict[s][e]):
+                predperf_dict[s][e] = 3*max 
+            print("Swimmer ", s , " in Event ", e, " time was ", predperf_dict[s][e]) 
+
+    return predperf_dict
 
 
 # not sure if I should comment this for now just because its the messy demo code
@@ -391,10 +419,27 @@ def demo_code_with_time_filter():
     bucknell_lineup = filter_by_team(some_lineup, filtered_swimmers, 184)
     lehigh_perf = filter_by_team(pred_perf, filtered_swimmers, 141)
     lehigh_lineup = filter_by_team(some_lineup, filtered_swimmers, 141)
-    print("lineup example")
-    print(bucknell_lineup)
-    print("pred perf example")
-    print(bucknell_perf)
+    #print("lineup example")
+    #print(bucknell_lineup)
+    #print("pred perf example")
+    #print(bucknell_perf.index)
+    #print(bucknell_perf.columns)
+    #print("loop through times for events")
+    #print(event_list)
+    # for s in bucknell_perf.index:
+    #     for e in bucknell_perf.columns:
+    #         print("Swimmer ", s, " in Event ", e, " time was ", bucknell_perf.loc[s,e])    
+    #create the dictionary of swimmer performances for MeetOpt
+    #method to convert from data frame to a dictionary for MeetOpt
+    #bucknell_perf_dict = bucknell_perf.to_dict('index') 
+    #swimmers_list = bucknell_perf.index.values.tolist()
+    #events_list = bucknell_perf.columns.values.tolist()
+    # for s in swimmers_list:
+    #     for e in events_list:
+    #         print("Swimmer ", swimmers.get_value(s,'athlete_name') , " in Event ", e, " time was ", bucknell_perf_dict[s][e]) 
+    
+    bucknell_perf_dict = convert_predperf_df_to_dict(bucknell_perf)
+
     # get additional lineups for matrix
     bucknell_inv_lin = get_team_lineup(team_data_in_range, filtered_swimmers, teams, event_list, bucknell_invitational)
     bucknell_inv_lin = filter_by_team(bucknell_inv_lin, filtered_swimmers, 184)
@@ -404,14 +449,17 @@ def demo_code_with_time_filter():
     score_a, score_b = calculate_pred_score(bucknell_perf, bucknell_lineup, lehigh_perf, lehigh_lineup)
     print(score_a)
     print(score_b)
-    # test matrix
+    # test matrix with a sample lineups
     score_matrix = pred_score_matrix([bucknell_perf, lehigh_perf],[[bucknell_lineup, bucknell_inv_lin],
                                                                    [lehigh_lineup, bu_lehigh_lin]])
     print(score_matrix)
-    print("tie test")
-    score_matrix = pred_score_matrix([bucknell_perf, bucknell_perf], [[bucknell_lineup, bucknell_inv_lin],
-                                                                      [bucknell_lineup, bucknell_inv_lin]])
-    print(score_matrix)
+    # test with lineups against themselves - diagonal scores against same lineup should be identical and scores
+    # on diagonals sum to total points available
+    #print("tie test")
+    #score_matrix = pred_score_matrix([bucknell_perf, bucknell_perf], [[bucknell_lineup, bucknell_inv_lin],
+    #                                                                  [bucknell_lineup, bucknell_inv_lin]])
+    #print(score_matrix)
+    #create a matrix just with one team's points. It's zero sum game so only one team's points are necessary
     team_a_matrix = []
     for i in range(len(score_matrix)):
         team_a_matrix.append([])
@@ -421,4 +469,4 @@ def demo_code_with_time_filter():
     print(team_a_matrix)
     return(team_a_matrix)
 
-#demo_code_with_time_filter()
+demo_code_with_time_filter()
