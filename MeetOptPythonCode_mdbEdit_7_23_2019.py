@@ -35,7 +35,7 @@ SolverTimeLimit = MaxSolveTime*60
 #OptGap = 0.05
 #Which Solver?
 #SolverUsed = "CBC"
-SolverUsed = "Gurobi"
+#SolverUsed = "Gurobi"
 
 if SolverUsed == "CBC":
     #Choose solver, and set it to problem, and build the model

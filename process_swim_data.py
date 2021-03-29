@@ -5,6 +5,7 @@ import re
 import helperfunctions as hf
 from collections import Counter
 import math
+from MeetOptPythonCode_ConvertToFunction_2_20_20 import MeetOpt
 # This file is for processing the data
 
 
@@ -286,10 +287,10 @@ def calculate_pred_score(perf_team_a, line_team_a, perf_team_b, line_team_b, sco
     relay_event_results = dict()
     for value in relay_list:
         #find out what type of relay value is and make list of legs in relay
-        if value[2] is "F":
+        if value[2] == "F":
             # relay is a freestyle relay, so there are two types of legs
             legs = [value, value[:1]+"1"+value[2:]]
-        elif value[2] is "M":
+        elif value[2] == "M":
             # relay is medley relay, so there are four different legs
             legs = [value, value[:1] + "2" + value[2:], value[:1] + "3" + value[2:], value[:1] + "4" + value[2:]]
         # get sum of legs in relay for full relay time.
@@ -358,7 +359,7 @@ def pred_score_matrix(team_list, lineup_matrix):
     return score_matrix
 
 
-def convert_predperf_df_to_dict(predperf_df):
+def convert_predperf_df_to_dict(predperf_df,df_name):
     """
     MDB function Addition
 
@@ -402,19 +403,23 @@ def convert_predperf_df_to_dict(predperf_df):
     predperf_df.rename(columns={'F1200Y':'200F', 'F150Y':'50F', 'F1100Y':'100F', 'F4100Y':'100BF', 'F2100Y':'100BS', 
     'F2200Y':'200BS', 'F1500Y':'500F', 'F5200Y':'200IM', 'F3100Y':'100BR', 'F4200Y':'200BF','F3200Y':'200BR','F11650Y':'1650F'}, inplace=True)
     
-    #print(predperf_df)
 
     predperf_dict = predperf_df.to_dict('index') 
     swimmers_list = predperf_df.index.values.tolist()
     events_list = predperf_df.columns.values.tolist()
     # Sloppy way of creating a max time for athletes with no time in history
     for e in events_list:
-        max = predperf_df[e].max()
+        max_time = predperf_df[e].max()
         #print("max of event ",e," is ",max)
         for s in swimmers_list:
             if math.isnan(predperf_dict[s][e]):
-                predperf_dict[s][e] = 3*max 
+                predperf_dict[s][e] = 3*max_time
+                predperf_df.at[s,e] = 3*max_time 
             #print("Swimmer ", s , " in Event ", e, " time was ", predperf_dict[s][e]) 
+
+    predperf_df.to_csv(df_name + "Perf.csv",index_label="Swimmer")
+
+    print(events_list)
 
     return predperf_dict, swimmers_list
 
@@ -445,10 +450,10 @@ def create_opptime_dict(perf_team_a, line_team_a):
 
     for value in relay_list:
         #find out what type of relay value is and make list of legs in relay
-        if value[2] is "F":
+        if value[2] == "F":
             # relay is a freestyle relay, so there are two types of legs
             legs = [value, value[:1]+"1"+value[2:]]
-        elif value[2] is "M":
+        elif value[2] == "M":
             # relay is medley relay, so there are four different legs
             legs = [value, value[:1] + "2" + value[2:], value[:1] + "3" + value[2:], value[:1] + "4" + value[2:]]
         # get sum of legs in relay for full relay time.
@@ -462,7 +467,7 @@ def create_opptime_dict(perf_team_a, line_team_a):
             if time_a == 0:
                 relay_event_results[value[2:-1]][0].pop()
 
-    # create opptime_team_a sorted dictionary of prediced opponent times by event
+    # create opptime_team_a sorted dictionary of predicted opponent times by event
     # number of places to score the events (likely three for a dual meet) ...SHOULD NOT HARD CODE THIS!
     places = [1, 2, 3]
 
@@ -513,36 +518,6 @@ def create_opptime_dict(perf_team_a, line_team_a):
     # and list of relay events (aggregated from relay_list - so only 1 per relay type)
     return opptime_team_a
 
-# not sure if I should comment this for now just because its the messy demo code
-def demo_code():
-    bucknell_vs_lehigh = 119957
-    bucknell_invitational = 136124
-    bu_lehigh = 119748
-    swims, swimmers, teams, event_list = get_data()
-    #swims = swims[swims["meet_id"] == bucknell_vs_lehigh]  # check to see that everything works for single meet
-    team_data = get_athlete_data(swims, swimmers, teams, event_list)
-    pred_perf = get_predicted_performance_matrix(team_data, 'average_time')
-    some_lineup = get_team_lineup(swims, swimmers, teams, event_list, bucknell_vs_lehigh)
-    bucknell_perf = filter_by_team(pred_perf, swimmers, 184)
-    bucknell_lineup = filter_by_team(some_lineup, swimmers, 184)
-    lehigh_perf = filter_by_team(pred_perf, swimmers, 141)
-    lehigh_lineup = filter_by_team(some_lineup, swimmers, 141)
-    # get additional lineups for matrix
-    bucknell_inv_lin = get_team_lineup(swims, swimmers, teams, event_list, bucknell_invitational)
-    bucknell_inv_lin = filter_by_team(bucknell_inv_lin, swimmers, 184)
-    bu_lehigh_lin = get_team_lineup(swims, swimmers, teams, event_list, bu_lehigh)
-    bu_lehigh_lin = filter_by_team(bu_lehigh_lin, swimmers, 141)
-    score_a, score_b = calculate_pred_score(bucknell_perf, bucknell_lineup, lehigh_perf, lehigh_lineup)
-    print(score_a)
-    print(score_b)
-    # test matrix
-    score_matrix = pred_score_matrix([bucknell_perf, lehigh_perf], [[bucknell_lineup, bucknell_inv_lin],
-                                                                    [lehigh_lineup, bu_lehigh_lin]])
-    print(score_matrix)
-
-#demo_code()
-
-
 def demo_code_with_time_filter():
     bucknell_vs_lehigh = 119957
     bucknell_invitational = 136124
@@ -586,22 +561,33 @@ def demo_code_with_time_filter():
     print("Lineup:")
     print(lehigh_lineup.head(20))
 
+    
+
     # MDB adds
     # Create the necessary dictionaries for MeetOpt
     # Note: scenarios are now the first of the key (not the third - updated MeetOpt)
-    bucknell_perf_dict, athlete = convert_predperf_df_to_dict(bucknell_perf)
-    lehigh_perf_dict, athlete = convert_predperf_df_to_dict(lehigh_perf)
-
-    print(athlete)
-
-    scenarios = [1,2]
     
+    bucknell_perf_dict, bucknellathlete = convert_predperf_df_to_dict(bucknell_perf, "Bucknell")
+    lehigh_perf_dict, lehighathlete = convert_predperf_df_to_dict(lehigh_perf, "Lehigh")
+
+    print(bucknellathlete)
+    print(lehighathlete)
+
+    opp_lineup_num = [1,2]
+    opp_lineup_selection_prob = (.4,.6)
+    
+    for i in opp_lineup_num:
+        print(i)
+
+    opp_scenario_prob = dict(zip(opp_lineup_num,opp_lineup_selection_prob))
+
     opp_perf_dict = dict()
     opp_perf_dict[1] = create_opptime_dict(lehigh_perf, lehigh_lineup) 
     opp_perf_dict[2] = create_opptime_dict(lehigh_perf, bu_lehigh_lin)
     
     # Necessary lists and dicts for MeetOpt
     individual_scored_events = ('200F','50F','100F','100BF','100BS','200BS','500F','200IM','100BR','200BF','200BR','1650F')
+    relay_noMR = ("200F_R",)
     relay_scored_events = ('200M_R','200F_R')
     indiv_pastperf_events = individual_scored_events
     relay_pastperf_events = ("200F_R_leg", "200F_R_lead","200M_R_BR","200M_R_BS","200M_R_BF","200M_R_F")
@@ -612,36 +598,47 @@ def demo_code_with_time_filter():
     print("total_scored_events: ", total_scored_events)
     print("total_pastperf_events: ", total_pastperf_events)
 
+    #print("event_noMR: ", event_noMR)
+
     # NOTES 1/20/20
     # home perf and two opponent scenarios seem to be working. Now get scenario probabilities
     # and send to MeetOpt with other lists/dictionaries.
 
-    scenario_prob = [.4,.6]
-    [print("Scenario ",i, " has probability ", prob) for i,prob in enumerate(scenario_prob)]
+    # NOTES 3/28/21
+    # Convert the lineups to something similar to MeetOpt and compute their similarity
+    # Can I get the predicted performance function to work on lineups and performance data that I 
+    # understand? 
     
-    
-    # test individual parts
-    score_a, score_b = calculate_pred_score(bucknell_perf, bucknell_lineup, lehigh_perf, lehigh_lineup)
-    print(score_a)
-    print(score_b)
-    # test matrix with a sample lineups
-    score_matrix = pred_score_matrix([bucknell_perf, lehigh_perf],[[bucknell_lineup, bucknell_inv_lin],
-                                                                   [lehigh_lineup, bu_lehigh_lin]])
-    print(score_matrix)
-    # test with lineups against themselves - diagonal scores against same lineup should be identical and scores
-    # on diagonals sum to total points available
-    #print("tie test")
-    #score_matrix = pred_score_matrix([bucknell_perf, bucknell_perf], [[bucknell_lineup, bucknell_inv_lin],
-    #                                                                  [bucknell_lineup, bucknell_inv_lin]])
-    #print(score_matrix)
-    #create a matrix just with one team's points. It's zero sum game so only one team's points are necessary
-    team_a_matrix = []
-    for i in range(len(score_matrix)):
-        team_a_matrix.append([])
-        for j in score_matrix[i]:
-            team_a_matrix[i].append(j[0])
+    skip = 1
+    if skip == 1:
+        # syntax
+        # MeetOpt(b,scenario,event_noMR,relaynoMR,stroke,homerank,event11, place,scenprob,indivplcscore,relayplcscore,indiv,opptime,BigM,Maxevent,Maxrelayevent,Maxindevent, playperf,playperfMR,playperfstart )
 
-    print(team_a_matrix)
-    return(team_a_matrix)
+        
+        MeetOpt(bucknellathlete, opp_lineup_num, opp_scenario_prob, individual_scored_events, relay_noMR, stroke, total_scored_events, total_pastperf_events, relay_scored_events,bucknell_perf_dict)
+        
+        # test individual parts
+        score_a, score_b = calculate_pred_score(bucknell_perf, bucknell_lineup, lehigh_perf, lehigh_lineup)
+        print(score_a)
+        print(score_b)
+        # test matrix with a sample lineups
+        score_matrix = pred_score_matrix([bucknell_perf, lehigh_perf],[[bucknell_lineup, bucknell_inv_lin],
+                                                                    [lehigh_lineup, bu_lehigh_lin]])
+        print(score_matrix)
+        # test with lineups against themselves - diagonal scores against same lineup should be identical and scores
+        # on diagonals sum to total points available
+        #print("tie test")
+        #score_matrix = pred_score_matrix([bucknell_perf, bucknell_perf], [[bucknell_lineup, bucknell_inv_lin],
+        #                                                                  [bucknell_lineup, bucknell_inv_lin]])
+        #print(score_matrix)
+        #create a matrix just with one team's points. It's zero sum game so only one team's points are necessary
+        team_a_matrix = []
+        for i in range(len(score_matrix)):
+            team_a_matrix.append([])
+            for j in score_matrix[i]:
+                team_a_matrix[i].append(j[0])
+
+        print(team_a_matrix)
+        return(team_a_matrix)
 
 demo_code_with_time_filter()
