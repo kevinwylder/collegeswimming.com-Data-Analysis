@@ -196,11 +196,13 @@ def get_team_lineup(swims, swimmers, teams, event_list, meet_id):
     """
     # retrieve times in swims table that were recorded from meet meet_id
     filter_by_meet = swims[swims["meet_id"] == meet_id].copy()  # works without copy() but will throw a warning
+    
     # change values in time column of filter_by_meet to be either 1 or 0 depending on if a time is recorded in the row
     filter_by_meet['time'] = filter_by_meet['time'].notna().astype(int)
 
+    # group data frames by swimmer creates a datafrme for EACH swimmer with data for all their swims
     group_by_individual = filter_by_meet.groupby("swimmer")
-
+    
     # make a dictionary where keys are event codes and values are all 0
     event_dict = {event: 0 for event in event_list}
 
@@ -211,11 +213,11 @@ def get_team_lineup(swims, swimmers, teams, event_list, meet_id):
 
     # updates the dictionary made above so that events an athlete participated in are True (1)
     for swimmer, swimmer_data in group_by_individual:
-        #  print(swimmer_data[["event","time"]])
         individual_data = swimmer_data[["event","time"]].transpose()
         individual_data.columns = individual_data.iloc[0]
         individual_data.drop("event", inplace=True)
         meet_lineup[swimmer].update(individual_data.to_dict('records')[0])
+        
     return pd.DataFrame.from_dict(meet_lineup, orient='index')
 
 
@@ -414,14 +416,72 @@ def convert_predperf_df_to_dict(predperf_df,df_name):
         for s in swimmers_list:
             if math.isnan(predperf_dict[s][e]):
                 predperf_dict[s][e] = 3*max_time
-                predperf_df.at[s,e] = 3*max_time 
+                predperf_df.loc[s,e] = 3*max_time 
             #print("Swimmer ", s , " in Event ", e, " time was ", predperf_dict[s][e]) 
 
     predperf_df.to_csv(df_name + "Perf.csv",index_label="Swimmer")
 
-    print(events_list)
+    #print(events_list)
 
-    return predperf_dict, swimmers_list
+    return predperf_dict, swimmers_list, predperf_df
+
+def convert_lineup_df_to_MeetOptEvents(lineup_df,team_name):
+    """
+    MDB function Addition
+
+    This function will convert lineup data frame to a dictionary and data frame with events matching those
+    needed for use within MeetOpt
+    :lineup_df: a data frame to convert
+    :return: lineup_df, lineup_dict : dictionary and dataframe of booleans signifying event participation
+    """
+    # Python is behaving like "pass by pointer" so create a copy
+    lineup_df = lineup_df.copy(deep=True)
+
+    # WARNING: ONLY WORKS FOR FEMALE EVENTS!!
+    
+    # Find if they were scheduled to swim a leg for each athlete in 200F Relay and add it to lineup_df
+    lineup_df["200F_R_leg_A"]  = lineup_df[["F1F50A"]].sum(axis = 1, skipna = True)  
+    lineup_df["200F_R_leg_B"]  = lineup_df[["F1F50B"]].sum(axis = 1, skipna = True)  
+    lineup_df = lineup_df.drop(columns=["F1F50A","F1F50B","F1F50C","F1F50D"])
+   
+    # Find if swam leadoff for a relay n 200F Relay and add it to lineup_df
+    lineup_df["200F_R_lead_A"]  = lineup_df[["FLF50A"]].sum(axis = 1, skipna = True)
+    lineup_df["200F_R_lead_B"]  = lineup_df[["FLF50B"]].sum(axis = 1, skipna = True)   
+    lineup_df = lineup_df.drop(columns=["FLF50A","FLF50B","FLF50C","FLF50D"])
+
+    # Find if swam medley relay stroke and add it to lineup_df
+    # breaststroke is first
+    lineup_df["200M_R_BR_A"]  = lineup_df[["FLM50A"]].sum(axis = 1, skipna = True)  
+    lineup_df["200M_R_BR_B"]  = lineup_df[["FLM50B"]].sum(axis = 1, skipna = True)
+    lineup_df = lineup_df.drop(columns=["FLM50A","FLM50B","FLM50C","FLM50D"])
+
+    # backstroke is second
+    lineup_df["200M_R_BS_A"]  = lineup_df[["F2M50A"]].sum(axis = 1, skipna = True)
+    lineup_df["200M_R_BS_B"]  = lineup_df[["F2M50B"]].sum(axis = 1, skipna = True)  
+    lineup_df = lineup_df.drop(columns=["F2M50A","F2M50B","F2M50C","F2M50D"])
+
+    # butterfly is third
+    lineup_df["200M_R_BF_A"]  = lineup_df[["F3M50A"]].sum(axis = 1, skipna = True)
+    lineup_df["200M_R_BF_B"]  = lineup_df[["F3M50B"]].sum(axis = 1, skipna = True)  
+    lineup_df = lineup_df.drop(columns=["F3M50A","F3M50B","F3M50C","F3M50D"])
+
+    # freestyle is fourth - include 200FR_leg since it's the same event
+    lineup_df["200M_R_F_A"]  = lineup_df[["F4M50A"]].sum(axis = 1, skipna = True)
+    lineup_df["200M_R_F_B"]  = lineup_df[["F4M50B"]].sum(axis = 1, skipna = True)  
+    lineup_df = lineup_df.drop(columns=["F4M50A","F4M50B","F4M50C","F4M50D"])
+
+    
+    # Rename events from website naming convention to MeetOpt (user friendly) naming convention
+    lineup_df.rename(columns={'F1200Y':'200F', 'F150Y':'50F', 'F1100Y':'100F', 'F4100Y':'100BF', 'F2100Y':'100BS', 
+    'F2200Y':'200BS', 'F1500Y':'500F', 'F5200Y':'200IM', 'F3100Y':'100BR', 'F4200Y':'200BF','F3200Y':'200BR','F11650Y':'1650F'}, inplace=True)
+    
+
+    lineup_MeetOpt_dict = lineup_df.to_dict('index') 
+    swimmers_list = lineup_df.index.values.tolist()
+    events_list = lineup_df.columns.values.tolist()
+ 
+    lineup_df.to_csv(team_name + "Lineup.csv",index_label="Swimmer")
+    return lineup_df, lineup_MeetOpt_dict    
 
 def create_opptime_dict(perf_team_a, line_team_a):
     """
@@ -509,31 +569,65 @@ def create_opptime_dict(perf_team_a, line_team_a):
         'F2100Y':'100BS', 'F2200Y':'200BS', 'F1500Y':'500F', 'F5200Y':'200IM', 'F3100Y':'100BR', \
             'F4200Y':'200BF','F3200Y':'200BR','F11650Y':'1650F', 'M50':'200M_R','F50':'200F_R'}
 
-    for p in places:
-        opptime_team_a[p] = dict((meetopt_scored_event_names[event], value) for (event, value) in opptime_team_a[p].items())
-        print(p," PLACE:")
-        print(opptime_team_a[p])
+    #for p in places:
+    #    opptime_team_a[p] = dict((meetopt_scored_event_names[event], value) for (event, value) in opptime_team_a[p].items())
+    #    print(p," PLACE:")
+    #    print(opptime_team_a[p])
     
     # return the opptime_team_a list of top p place times for each event, return the list of invidual events
     # and list of relay events (aggregated from relay_list - so only 1 per relay type)
     return opptime_team_a
 
 def demo_code_with_time_filter():
+    """
+    Code to get initial performance and lineup data from swimmers database. Convert to proper type for MeetOpt
+    Relay: 11-4-2-0 with at most two relay teams scoring
+    Indiv: 9-4-3-2-1-0 with only the best three on each team scoring
+    Athletes can be in at most 3 events
+    Can change in Constants.py file
+    Ignoring diving
+    """
+    # Unique meet_id for three meets between Lehigh and Bucknell
     bucknell_vs_lehigh = 119957
-    bucknell_invitational = 136124
-    bu_lehigh = 119748
+    bucknell_invite = 136124
+    lehigh_vs_bos = 119748
+
+    # Unique team IDs
+    Bucknell = 184
+    Lehigh = 141
+
+    # Get the data for all the swims in the data 
     swims, swimmers, teams, event_list = get_data()
-    team_data_in_range, filtered_swimmers= filter_by_date_range(swims, swimmers, None, 1548460800) #day of bu_lehigh meet 1548460800
-    #swims = swims[swims["meet_id"] == bucknell_vs_lehigh]  # check to see that everything works for single meet
+    
+    # Filter the data so you're only using times up to event
+    team_data_in_range, filtered_swimmers= filter_by_date_range(swims, swimmers, None, 3548460800) #day of bu_lehigh meet 1548460800
+    team_data_in_range.to_csv("Bucknell_Lehigh_Team_Data.csv",index=False)
+
+    print(team_data_in_range.head())
+    # format data and write to CSV
     team_data = get_athlete_data(team_data_in_range, filtered_swimmers, teams, event_list)
+    
+    # Get the predicted performance for all athletes and all events and ALL TEAMS in a dataframe
+    # Can change to 'minimum_time, average_time, or median_time
     pred_perf = get_predicted_performance_matrix(team_data, 'minimum_time')
-    some_lineup = get_team_lineup(swims, filtered_swimmers, teams, event_list, bucknell_vs_lehigh)
-    bucknell_perf = filter_by_team(pred_perf, filtered_swimmers, 184)
-    bucknell_lineup = filter_by_team(some_lineup, filtered_swimmers, 184)
-    lehigh_perf = filter_by_team(pred_perf, filtered_swimmers, 141)
-    lehigh_lineup = filter_by_team(some_lineup, filtered_swimmers, 141)
-    #print("lineup example")
-    #print(bucknell_lineup)
+    
+    # Get the predicted performances by preference for teams of interest
+    bucknell_perf = filter_by_team(pred_perf, filtered_swimmers, Bucknell)
+    lehigh_perf = filter_by_team(pred_perf, filtered_swimmers, Lehigh)
+    
+    # Get the a past lineup for ALL athletes and ALL events and ALL TEAMS in a dataframe
+    team_lineups = get_team_lineup(team_data_in_range, filtered_swimmers, teams, event_list, bucknell_vs_lehigh)
+
+    # Get the lineup for each team of interest
+    bucknell_lineup = filter_by_team(team_lineups, filtered_swimmers, Bucknell)
+    lehigh_lineup = filter_by_team(team_lineups, filtered_swimmers, Lehigh)
+    print(bucknell_lineup.max())
+   
+    ## LINEUPS seem to work now.
+
+    ##### 
+    # LAZY debugging - start
+    #
     #print("pred perf example")
     #print(bucknell_perf.index)
     #print(bucknell_perf.columns)
@@ -552,38 +646,42 @@ def demo_code_with_time_filter():
     #         print("Swimmer ", swimmers.get_value(s,'athlete_name') , " in Event ", e, " time was ", bucknell_perf_dict[s][e]) 
     
     # get additional lineups for matrix
-    bucknell_inv_lin = get_team_lineup(team_data_in_range, filtered_swimmers, teams, event_list, bucknell_invitational)
+    bucknell_inv_lin = get_team_lineup(team_data_in_range, filtered_swimmers, teams, event_list, bucknell_invite)
     bucknell_inv_lin = filter_by_team(bucknell_inv_lin, filtered_swimmers, 184)
-    bu_lehigh_lin = get_team_lineup(team_data_in_range, filtered_swimmers, teams, event_list, bu_lehigh)
-    bu_lehigh_lin = filter_by_team(bu_lehigh_lin, filtered_swimmers, 141)
+    lehigh_vs_bos_lin = get_team_lineup(team_data_in_range, filtered_swimmers, teams, event_list, lehigh_vs_bos)
+    lehigh_vs_bos_lin = filter_by_team(lehigh_vs_bos_lin, filtered_swimmers, 141)
     
-    print(lehigh_perf.head(20))
-    print("Lineup:")
-    print(lehigh_lineup.head(20))
-
+    print(lehigh_vs_bos_lin.max())
     
+    # LAZY Debugging END
+    #####
 
     # MDB adds
     # Create the necessary dictionaries for MeetOpt
     # Note: scenarios are now the first of the key (not the third - updated MeetOpt)
     
-    bucknell_perf_dict, bucknellathlete = convert_predperf_df_to_dict(bucknell_perf, "Bucknell")
-    lehigh_perf_dict, lehighathlete = convert_predperf_df_to_dict(lehigh_perf, "Lehigh")
+    bucknell_perf_dict, bucknellathlete, bucknell_perf_df = convert_predperf_df_to_dict(bucknell_perf, "Bucknell")
+    lehigh_perf_dict, lehighathlete, lehigh_perf_df = convert_predperf_df_to_dict(lehigh_perf, "Lehigh")
 
-    print(bucknellathlete)
-    print(lehighathlete)
+    #print(f"Bucknell Performance: \n {bucknell_perf_df}")
+    #print(f"Lehigh Performance: \n {lehigh_perf_df}")
+
+    # Convert the swimming.com lineup events into a lineup amenable to using in MeetOpt
+    # Return a dataframe and a dictionary
+    bucknell_lineup_MeetOpt_df, bucknell_lineup_MeetOpt_dict = convert_lineup_df_to_MeetOptEvents(bucknell_lineup,"Bucknell_1_")
+    print(f"Bucknell Lineup: \n {bucknell_lineup_MeetOpt_df}")
+    lehigh_lineup_MeetOpt_df, lehigh_lineup_MeetOpt_dict = convert_lineup_df_to_MeetOptEvents(lehigh_lineup,"Lehigh_1_")
+    #print(f"Bucknell Athlete Numbers: \n {bucknellathlete}")
+    #print(f"Lehigh Athlete Numbers: \n {lehighathlete}")
 
     opp_lineup_num = [1,2]
     opp_lineup_selection_prob = (.4,.6)
     
-    for i in opp_lineup_num:
-        print(i)
-
     opp_scenario_prob = dict(zip(opp_lineup_num,opp_lineup_selection_prob))
 
     opp_perf_dict = dict()
     opp_perf_dict[1] = create_opptime_dict(lehigh_perf, lehigh_lineup) 
-    opp_perf_dict[2] = create_opptime_dict(lehigh_perf, bu_lehigh_lin)
+    opp_perf_dict[2] = create_opptime_dict(lehigh_perf, bucknell_lineup)
     
     # Necessary lists and dicts for MeetOpt
     individual_scored_events = ('200F','50F','100F','100BF','100BS','200BS','500F','200IM','100BR','200BF','200BR','1650F')
@@ -595,8 +693,8 @@ def demo_code_with_time_filter():
 
     total_scored_events = individual_scored_events + relay_scored_events
     total_pastperf_events = indiv_pastperf_events + relay_pastperf_events
-    print("total_scored_events: ", total_scored_events)
-    print("total_pastperf_events: ", total_pastperf_events)
+    #print("total_scored_events: ", total_scored_events)
+    #print("total_pastperf_events: ", total_pastperf_events)
 
     #print("event_noMR: ", event_noMR)
 
@@ -623,7 +721,7 @@ def demo_code_with_time_filter():
         print(score_b)
         # test matrix with a sample lineups
         score_matrix = pred_score_matrix([bucknell_perf, lehigh_perf],[[bucknell_lineup, bucknell_inv_lin],
-                                                                    [lehigh_lineup, bu_lehigh_lin]])
+                                                                    [lehigh_lineup, lehigh_vs_bos_lin]])
         print(score_matrix)
         # test with lineups against themselves - diagonal scores against same lineup should be identical and scores
         # on diagonals sum to total points available

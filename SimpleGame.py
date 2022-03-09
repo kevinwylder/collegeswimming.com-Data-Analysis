@@ -143,9 +143,9 @@ def AssgnRead(ExcelWBName,ExcelWSName):
 #If the above function is called in this program, run it. If it used as a imported module, the it is ignored 
 if __name__ == '__main__':
     #calls the predicted score and lineups as given in the process_swim_data.py code
-    score_matrix = demo_code_with_time_filter()
-    #score_matrix = [[113.0, 121.5], [139.5, 131.0]]
-    # #Return the Nash equilibrium mixed strategy and expected points for team A and team B.
+    #score_matrix = demo_code_with_time_filter()
+    score_matrix = [[113.0, 121.5], [139.5, 131.0]]
+    #Return the Nash equilibrium mixed strategy and expected points for team A and team B.
     f,optA = FindOptStrategy('A', score_matrix)
     g,optB = FindOptStrategy('B',score_matrix)
     print('\n Printing f')
