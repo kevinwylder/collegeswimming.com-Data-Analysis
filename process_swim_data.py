@@ -376,34 +376,65 @@ def convert_predperf_df_to_dict(predperf_df,df_name):
     # WARNING: ONLY WORKS FOR FEMALE EVENTS!!
     
     # Find the fastest leg for each athlete in 200F Relay and add it to predperf
-    predperf_df["200F_R_leg"]  = predperf_df[["F1F50A","F1F50B","F1F50C","F1F50D"]].min(axis = 1, skipna = True)  
-    predperf_df = predperf_df.drop(columns=["F1F50A","F1F50B","F1F50C","F1F50D"])
+    relayFreeLegs = ["F1F50A","F1F50B","F1F50C","F1F50D"]
+    fastestFreeLeg = predperf_df[relayFreeLegs].min(axis = 1, skipna = True) 
+    for event in relayFreeLegs:
+        predperf_df[event] = fastestFreeLeg
+    
+    #predperf_df["200F_R_leg"]  = predperf_df[["F1F50A","F1F50B","F1F50C","F1F50D"]].min(axis = 1, skipna = True)  
+    #predperf_df = predperf_df.drop(columns=["F1F50A","F1F50B","F1F50C","F1F50D"])
    
     # Find the fastest leadoff for a relay n 200F Relay and add it to predperf
-    predperf_df["200F_R_lead"]  = predperf_df[["FLF50A","FLF50B","FLF50C","FLF50D","F150Y"]].min(axis = 1, skipna = True)  
-    predperf_df = predperf_df.drop(columns=["FLF50A","FLF50B","FLF50C","FLF50D"])
+    relayFreeLeads = ["FLF50A","FLF50B","FLF50C","FLF50D"]
+    fastestFreeLead = predperf_df[relayFreeLeads].min(axis = 1, skipna = True) 
+    for event in relayFreeLeads:
+        predperf_df[event] = fastestFreeLead
+
+
+    #predperf_df["200F_R_lead"]  = predperf_df[["FLF50A","FLF50B","FLF50C","FLF50D","F150Y"]].min(axis = 1, skipna = True)  
+    #predperf_df = predperf_df.drop(columns=["FLF50A","FLF50B","FLF50C","FLF50D"])
 
     # Find the fastest time for the medley relay stroke and add it to predperf
-    # breaststroke is first
-    predperf_df["200M_R_BR"]  = predperf_df[["FLM50A","FLM50B","FLM50C","FLM50D"]].min(axis = 1, skipna = True)  
-    predperf_df = predperf_df.drop(columns=["FLM50A","FLM50B","FLM50C","FLM50D"])
+    # breaststroke is FIRST in Medley
+    MedleyLeads = ["FLM50A","FLM50B","FLM50C","FLM50D"]
+    fastestMedLead = predperf_df[MedleyLeads].min(axis = 1, skipna = True) 
+    for event in MedleyLeads:
+        predperf_df[event] = fastestMedLead
+
+    # predperf_df["200M_R_BR"]  = predperf_df[["FLM50A","FLM50B","FLM50C","FLM50D"]].min(axis = 1, skipna = True)  
+    # predperf_df = predperf_df.drop(columns=["FLM50A","FLM50B","FLM50C","FLM50D"])
 
     # backstroke is second
-    predperf_df["200M_R_BS"]  = predperf_df[["F2M50A","F2M50B","F2M50C","F2M50D"]].min(axis = 1, skipna = True)  
-    predperf_df = predperf_df.drop(columns=["F2M50A","F2M50B","F2M50C","F2M50D"])
+    MedleyBacks = ["F2M50A","F2M50B","F2M50C","F2M50D"]
+    fastestBackLegs = predperf_df[MedleyBacks].min(axis = 1, skipna = True) 
+    for event in MedleyBacks:
+        predperf_df[event] = fastestBackLegs
+    
+    # predperf_df["200M_R_BS"]  = predperf_df[["F2M50A","F2M50B","F2M50C","F2M50D"]].min(axis = 1, skipna = True)  
+    # predperf_df = predperf_df.drop(columns=["F2M50A","F2M50B","F2M50C","F2M50D"])
 
     # butterfly is third
-    predperf_df["200M_R_BF"]  = predperf_df[["F3M50A","F3M50B","F3M50C","F3M50D"]].min(axis = 1, skipna = True)  
-    predperf_df = predperf_df.drop(columns=["F3M50A","F3M50B","F3M50C","F3M50D"])
+    MedleyBFs = ["F3M50A","F3M50B","F3M50C","F3M50D"]
+    fastestBFLegs = predperf_df[MedleyBFs].min(axis = 1, skipna = True) 
+    for event in MedleyBFs:
+        predperf_df[event] = fastestBFLegs
 
-    # freestyle is fourth - include 200FR_leg since it's the same event
-    predperf_df["200M_R_F"]  = predperf_df[["F4M50A","F4M50B","F4M50C","F4M50D","200F_R_leg"]].min(axis = 1, skipna = True)  
-    predperf_df = predperf_df.drop(columns=["F4M50A","F4M50B","F4M50C","F4M50D"])
+    # predperf_df["200M_R_BF"]  = predperf_df[["F3M50A","F3M50B","F3M50C","F3M50D"]].min(axis = 1, skipna = True)  
+    # predperf_df = predperf_df.drop(columns=["F3M50A","F3M50B","F3M50C","F3M50D"])
+
+    # freestyle is fourth - include relay freestyle legs since it's the same event
+    MedleyFrees = ["F4M50A","F4M50B","F4M50C","F4M50D","F1F50A","F1F50B","F1F50C","F1F50D"]
+    fastestMedFreeLegs = predperf_df[MedleyFrees].min(axis = 1, skipna = True) 
+    for event in MedleyFrees:
+        predperf_df[event] = fastestMedFreeLegs
+
+    # predperf_df["200M_R_F"]  = predperf_df[["F4M50A","F4M50B","F4M50C","F4M50D","200F_R_leg"]].min(axis = 1, skipna = True)  
+    # predperf_df = predperf_df.drop(columns=["F4M50A","F4M50B","F4M50C","F4M50D"])
 
     
     # Rename events from website naming convention to MeetOpt (user friendly) naming convention
-    predperf_df.rename(columns={'F1200Y':'200F', 'F150Y':'50F', 'F1100Y':'100F', 'F4100Y':'100BF', 'F2100Y':'100BS', 
-    'F2200Y':'200BS', 'F1500Y':'500F', 'F5200Y':'200IM', 'F3100Y':'100BR', 'F4200Y':'200BF','F3200Y':'200BR','F11650Y':'1650F'}, inplace=True)
+    # predperf_df.rename(columns={'F1200Y':'200F', 'F150Y':'50F', 'F1100Y':'100F', 'F4100Y':'100BF', 'F2100Y':'100BS', 
+    # 'F2200Y':'200BS', 'F1500Y':'500F', 'F5200Y':'200IM', 'F3100Y':'100BR', 'F4200Y':'200BF','F3200Y':'200BR','F11650Y':'1650F'}, inplace=True)
     
 
     predperf_dict = predperf_df.to_dict('index') 
@@ -434,46 +465,48 @@ def convert_lineup_df_to_MeetOptEvents(lineup_df,team_name):
     :lineup_df: a data frame to convert
     :return: lineup_df, lineup_dict : dictionary and dataframe of booleans signifying event participation
     """
+    lineup_df.to_csv(team_name + "Lineup_old.csv",index_label="Swimmer")
+
     # Python is behaving like "pass by pointer" so create a copy
     lineup_df = lineup_df.copy(deep=True)
 
     # WARNING: ONLY WORKS FOR FEMALE EVENTS!!
     
-    # Find if they were scheduled to swim a leg for each athlete in 200F Relay and add it to lineup_df
-    lineup_df["200F_R_leg_A"]  = lineup_df[["F1F50A"]].sum(axis = 1, skipna = True)  
-    lineup_df["200F_R_leg_B"]  = lineup_df[["F1F50B"]].sum(axis = 1, skipna = True)  
-    lineup_df = lineup_df.drop(columns=["F1F50A","F1F50B","F1F50C","F1F50D"])
+    # # Find if they were scheduled to swim a leg for each athlete in 200F Relay and add it to lineup_df
+    # lineup_df["200F_R_leg_A"]  = lineup_df[["F1F50A"]].sum(axis = 1, skipna = True)  
+    # lineup_df["200F_R_leg_B"]  = lineup_df[["F1F50B"]].sum(axis = 1, skipna = True)  
+    # lineup_df = lineup_df.drop(columns=["F1F50A","F1F50B","F1F50C","F1F50D"])
    
-    # Find if swam leadoff for a relay n 200F Relay and add it to lineup_df
-    lineup_df["200F_R_lead_A"]  = lineup_df[["FLF50A"]].sum(axis = 1, skipna = True)
-    lineup_df["200F_R_lead_B"]  = lineup_df[["FLF50B"]].sum(axis = 1, skipna = True)   
-    lineup_df = lineup_df.drop(columns=["FLF50A","FLF50B","FLF50C","FLF50D"])
+    # # Find if swam leadoff for a relay n 200F Relay and add it to lineup_df
+    # lineup_df["200F_R_lead_A"]  = lineup_df[["FLF50A"]].sum(axis = 1, skipna = True)
+    # lineup_df["200F_R_lead_B"]  = lineup_df[["FLF50B"]].sum(axis = 1, skipna = True)   
+    # lineup_df = lineup_df.drop(columns=["FLF50A","FLF50B","FLF50C","FLF50D"])
 
-    # Find if swam medley relay stroke and add it to lineup_df
-    # breaststroke is first
-    lineup_df["200M_R_BR_A"]  = lineup_df[["FLM50A"]].sum(axis = 1, skipna = True)  
-    lineup_df["200M_R_BR_B"]  = lineup_df[["FLM50B"]].sum(axis = 1, skipna = True)
-    lineup_df = lineup_df.drop(columns=["FLM50A","FLM50B","FLM50C","FLM50D"])
+    # # Find if swam medley relay stroke and add it to lineup_df
+    # # breaststroke is first
+    # lineup_df["200M_R_BR_A"]  = lineup_df[["FLM50A"]].sum(axis = 1, skipna = True)  
+    # lineup_df["200M_R_BR_B"]  = lineup_df[["FLM50B"]].sum(axis = 1, skipna = True)
+    # lineup_df = lineup_df.drop(columns=["FLM50A","FLM50B","FLM50C","FLM50D"])
 
-    # backstroke is second
-    lineup_df["200M_R_BS_A"]  = lineup_df[["F2M50A"]].sum(axis = 1, skipna = True)
-    lineup_df["200M_R_BS_B"]  = lineup_df[["F2M50B"]].sum(axis = 1, skipna = True)  
-    lineup_df = lineup_df.drop(columns=["F2M50A","F2M50B","F2M50C","F2M50D"])
+    # # backstroke is second
+    # lineup_df["200M_R_BS_A"]  = lineup_df[["F2M50A"]].sum(axis = 1, skipna = True)
+    # lineup_df["200M_R_BS_B"]  = lineup_df[["F2M50B"]].sum(axis = 1, skipna = True)  
+    # lineup_df = lineup_df.drop(columns=["F2M50A","F2M50B","F2M50C","F2M50D"])
 
-    # butterfly is third
-    lineup_df["200M_R_BF_A"]  = lineup_df[["F3M50A"]].sum(axis = 1, skipna = True)
-    lineup_df["200M_R_BF_B"]  = lineup_df[["F3M50B"]].sum(axis = 1, skipna = True)  
-    lineup_df = lineup_df.drop(columns=["F3M50A","F3M50B","F3M50C","F3M50D"])
+    # # butterfly is third
+    # lineup_df["200M_R_BF_A"]  = lineup_df[["F3M50A"]].sum(axis = 1, skipna = True)
+    # lineup_df["200M_R_BF_B"]  = lineup_df[["F3M50B"]].sum(axis = 1, skipna = True)  
+    # lineup_df = lineup_df.drop(columns=["F3M50A","F3M50B","F3M50C","F3M50D"])
 
-    # freestyle is fourth - include 200FR_leg since it's the same event
-    lineup_df["200M_R_F_A"]  = lineup_df[["F4M50A"]].sum(axis = 1, skipna = True)
-    lineup_df["200M_R_F_B"]  = lineup_df[["F4M50B"]].sum(axis = 1, skipna = True)  
-    lineup_df = lineup_df.drop(columns=["F4M50A","F4M50B","F4M50C","F4M50D"])
+    # # freestyle is fourth - include 200FR_leg since it's the same event
+    # lineup_df["200M_R_F_A"]  = lineup_df[["F4M50A"]].sum(axis = 1, skipna = True)
+    # lineup_df["200M_R_F_B"]  = lineup_df[["F4M50B"]].sum(axis = 1, skipna = True)  
+    # lineup_df = lineup_df.drop(columns=["F4M50A","F4M50B","F4M50C","F4M50D"])
 
     
-    # Rename events from website naming convention to MeetOpt (user friendly) naming convention
-    lineup_df.rename(columns={'F1200Y':'200F', 'F150Y':'50F', 'F1100Y':'100F', 'F4100Y':'100BF', 'F2100Y':'100BS', 
-    'F2200Y':'200BS', 'F1500Y':'500F', 'F5200Y':'200IM', 'F3100Y':'100BR', 'F4200Y':'200BF','F3200Y':'200BR','F11650Y':'1650F'}, inplace=True)
+    # # Rename events from website naming convention to MeetOpt (user friendly) naming convention
+    # lineup_df.rename(columns={'F1200Y':'200F', 'F150Y':'50F', 'F1100Y':'100F', 'F4100Y':'100BF', 'F2100Y':'100BS', 
+    # 'F2200Y':'200BS', 'F1500Y':'500F', 'F5200Y':'200IM', 'F3100Y':'100BR', 'F4200Y':'200BF','F3200Y':'200BR','F11650Y':'1650F'}, inplace=True)
     
 
     lineup_MeetOpt_dict = lineup_df.to_dict('index') 
@@ -598,6 +631,9 @@ def demo_code_with_time_filter():
 
     # Get the data for all the swims in the data 
     swims, swimmers, teams, event_list = get_data()
+
+    print(swims[(swims['team'] == 184) & (swims['event'] == 'FLF50A')])
+    print(swims[(swims['team'] == 184) & (swims['event'] == 'F1F50A')])
     
     # Filter the data so you're only using times up to event
     team_data_in_range, filtered_swimmers= filter_by_date_range(swims, swimmers, None, 3548460800) #day of bu_lehigh meet 1548460800
@@ -621,7 +657,7 @@ def demo_code_with_time_filter():
     # Get the lineup for each team of interest
     bucknell_lineup = filter_by_team(team_lineups, filtered_swimmers, Bucknell)
     lehigh_lineup = filter_by_team(team_lineups, filtered_swimmers, Lehigh)
-    print(bucknell_lineup.max())
+    #print(bucknell_lineup.max())
    
     ## LINEUPS seem to work now.
 
@@ -651,8 +687,9 @@ def demo_code_with_time_filter():
     lehigh_vs_bos_lin = get_team_lineup(team_data_in_range, filtered_swimmers, teams, event_list, lehigh_vs_bos)
     lehigh_vs_bos_lin = filter_by_team(lehigh_vs_bos_lin, filtered_swimmers, 141)
     
-    print(lehigh_vs_bos_lin.max())
-    
+    # print("THIS IS LEHIGHvBOS:..........................")
+    # print( bucknell_lineup.max())
+    # print("THIS WAS LEHIGHvBOS:..........................")
     # LAZY Debugging END
     #####
 
@@ -669,7 +706,7 @@ def demo_code_with_time_filter():
     # Convert the swimming.com lineup events into a lineup amenable to using in MeetOpt
     # Return a dataframe and a dictionary
     bucknell_lineup_MeetOpt_df, bucknell_lineup_MeetOpt_dict = convert_lineup_df_to_MeetOptEvents(bucknell_lineup,"Bucknell_1_")
-    print(f"Bucknell Lineup: \n {bucknell_lineup_MeetOpt_df}")
+    #print(f"Bucknell Lineup: \n {bucknell_lineup_MeetOpt_df}")
     lehigh_lineup_MeetOpt_df, lehigh_lineup_MeetOpt_dict = convert_lineup_df_to_MeetOptEvents(lehigh_lineup,"Lehigh_1_")
     #print(f"Bucknell Athlete Numbers: \n {bucknellathlete}")
     #print(f"Lehigh Athlete Numbers: \n {lehighathlete}")
@@ -707,7 +744,7 @@ def demo_code_with_time_filter():
     # Can I get the predicted performance function to work on lineups and performance data that I 
     # understand? 
     
-    skip = 1
+    skip = 0
     if skip == 1:
         # syntax
         # MeetOpt(b,scenario,event_noMR,relaynoMR,stroke,homerank,event11, place,scenprob,indivplcscore,relayplcscore,indiv,opptime,BigM,Maxevent,Maxrelayevent,Maxindevent, playperf,playperfMR,playperfstart )

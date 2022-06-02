@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, date, time
 import matplotlib.pyplot as plt
-from process_swim_data import *
+#from process_swim_data import *
 
 
 def FindOptStrategy(team, payoffmatrix):
@@ -144,10 +144,10 @@ def AssgnRead(ExcelWBName,ExcelWSName):
 if __name__ == '__main__':
     #calls the predicted score and lineups as given in the process_swim_data.py code
     #score_matrix = demo_code_with_time_filter()
-    score_matrix = [[113.0, 121.5], [139.5, 131.0]]
+    score_matrix = [[2, -3], [-3, 4]]
     #Return the Nash equilibrium mixed strategy and expected points for team A and team B.
     f,optA = FindOptStrategy('A', score_matrix)
-    g,optB = FindOptStrategy('B',score_matrix)
+    g,optB = FindOptStrategy('B', score_matrix)
     print('\n Printing f')
     print(f)
     print('\n Printing optA')
