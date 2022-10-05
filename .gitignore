@@ -1,5 +1,9 @@
-*.db
+
 graphs/*
 .RData
 .RHistory
+*.history
 *.pyc
+.idea
+*.log
+
